@@ -1,0 +1,29 @@
+{
+  "name": "fiestasmiguel-main",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "db:migrate": "prisma migrate dev --schema src/db/schema/",
+    "db:generate": "prisma generate --schema src/db/schema/",
+    "dev": "tsx --watch src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.16.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "tsx": "^4.20.6"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.3",
+    "nodemon": "^3.1.10",
+    "prisma": "^6.16.3"
+  }
+}

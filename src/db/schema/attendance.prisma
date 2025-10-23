@@ -1,0 +1,14 @@
+model Attendance {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  eventId    Int
+  confirmed  Boolean  @default(false)
+  paid       Boolean  @default(false)
+
+  user       User     @relation(fields: [userId], references: [id])
+  event      Event    @relation(fields: [eventId], references: [id])
+
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, eventId])
+}
