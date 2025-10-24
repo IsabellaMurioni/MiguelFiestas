@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { UserService } from "../services/userServices"
-;
+import { UserService } from "../services/userService";
 import { JwtService } from "../services/jwtService";
+
+import { Request, Response } from "express";
+import { authService, AuthService } from "../services/authService";
 
 const userRouter = Router();
 const userService = new UserService();
@@ -87,5 +89,24 @@ userRouter.get("/:id/transactions", requireAuth, async (req: any, res) => {
   }
 });
 
-export default userRouter;
+userRouter.post("/register", async (req: Request, res: Response) => {
 
+  try {
+
+    const user = await userService.createUser(req.body)
+
+    res.status(201).json({
+      data: user
+    })
+
+  } catch (error: any) {
+    
+    console.log(error)
+
+    res.status(418).json({
+      data: error.message
+    })
+
+  }
+
+})

@@ -8,6 +8,7 @@ type jsonwebtokenBody = {
 const secret_key = process.env.JWT_SECRET;
 
 export class JwtService {
+  
   async generateJsonWebAccessToken(user: jsonwebtokenBody) {
     try {
       const token = jwt.sign(

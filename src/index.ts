@@ -1,11 +1,13 @@
 import express from "express";
 
 import userRouter from "./routers/userRouter";
-import authRouter from "./routers/authRouter";
 import eventRouter from "./routers/eventRouter";
 
 const app = express();
-app.use("/auth", authRouter);
+
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
+
 app.use("/users", userRouter);
 app.use("/events", eventRouter);
 
