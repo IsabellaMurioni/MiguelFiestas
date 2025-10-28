@@ -4,24 +4,12 @@ import { JwtService } from "../services/jwtService";
 
 const eventRouter = Router();
 const eventService = new EventService();
-const jwtService = new JwtService();
+
+import { requireAuth } from "../middleware/requireAuth";
 
 /**
  * Middleware auth
  */
-const requireAuth = async (req: any, res: any, next: any) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: "Token no proporcionado" });
-
-    const token = authHeader.split(" ")[1];
-    const decoded = await jwtService.verifyAccessToken(token);
-    req.user = decoded;
-    next();
-  } catch (err: any) {
-    res.status(401).json({ error: err.message || "Token inválido" });
-  }
-};
 
 /**
  * POST /events
@@ -33,6 +21,28 @@ eventRouter.post("/", requireAuth, async (req: any, res) => {
     const eventData = { ...req.body, date: new Date(req.body.date) };
     const created = await eventService.createEvent(userId, eventData);
     res.status(201).json(created);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+eventRouter.post("/:id/buy", requireAuth, async (req: any, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const eventID = Number(req.params.id)
+
+    await eventService.getEventById(eventID)
+
+    const quantity = req.body.quantity
+
+    const ticket = await eventService.buyTicket(userId, eventID, quantity)
+
+    res.status(200).json({
+      data: ticket,
+      message: "Ticket purchased successfully."
+    })
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

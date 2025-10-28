@@ -1,4 +1,4 @@
-import { compare } from "bcrypt";
+import bcrypt from "bcrypt"
 import { db } from "../db/db";
 import { JwtService } from "./jwtService";
 import { AuthValidation } from "../validations/authValidation";
@@ -11,11 +11,14 @@ export class AuthService {
     AuthValidation.validateEmailFormat(email);
     AuthValidation.validatePasswordNotEmpty(password);
 
-    const user = await db.user.findUnique({ where: { email } });
-    if (!user) throw new Error("Email o contraseña incorrectos");
+    const user = await db.user.findUnique({ 
+      where: { email } 
+    });
+  
+    if (!user) throw new Error("Email incorrecto.");
 
-    const validPassword = await compare(password, user.password);
-    if (!validPassword) throw new Error("Email o contraseña incorrectos");
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) throw new Error("Contraseña incorrectos");
 
     const accessToken = await jwtService.generateJsonWebAccessToken(user);
 

@@ -1,0 +1,40 @@
+enum EventStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+enum Category {
+  FESTIVALS          
+  THEMATIC_MEETINGS  
+  NEIGHBORHOOD_GATHERINGS 
+  CONCERTS           
+  BIRTHDAYS          
+  WEDDINGS           
+  CONFERENCES        
+  SPORTS             
+  EXHIBITIONS        
+}
+
+
+model Event {
+  id              Int          @id @default(autoincrement())
+  title           String
+  shortDesc       String
+  longDesc        String
+  location        String
+  date            DateTime
+  price           Float        @default(0.0)
+  isFree          Boolean      @default(true)
+  status          EventStatus  @default(SCHEDULED)
+  category        Category
+  maxAttendees    Int?
+
+  images          String?    // Guardamos URLs de imágenes
+  creatorId       Int
+
+  creator         User         @relation("CreatedEvents", fields: [creatorId], references: [id])
+  attendees       Attendance[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}

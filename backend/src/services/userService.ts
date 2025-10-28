@@ -31,12 +31,10 @@ export class UserService {
   }
 
   // Get Profile
-  async getProfile(accessToken: string) {
-      const decoded = await jwtService.verifyAccessToken(accessToken);
-      if (!decoded) throw new Error("Token inválido");
+  async getProfile(userID: number) {
 
-      const user = await db.user.findFirst({
-        where: { id: decoded.id, deletedAt: null },
+      const user = await db.user.findUnique({
+        where: { id: userID, deletedAt: null },
         select: {
           id: true,
           nickName: true,

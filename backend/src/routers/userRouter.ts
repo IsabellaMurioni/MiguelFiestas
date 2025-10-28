@@ -1,10 +1,10 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Request, Response } from "express";
 import { UserService } from "../services/userService";
-import { JwtService } from "../services/jwtService";
 
 const userRouter = Router();
 const userService = new UserService();
-const jwtService = new JwtService();
+
+import { requireAuth } from "../middleware/requireAuth";
 
 /**
  * Authenticated request interface
@@ -16,19 +16,6 @@ interface AuthRequest extends Request {
 /**
  * Middleware to verify JWT token and attach user to request
  */
-const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "Token not provided" });
-
-  const token = authHeader.split(" ")[1];
-  try {
-    const decoded = await jwtService.verifyAccessToken(token);
-    req.user = decoded;
-    next();
-  } catch (err: any) {
-    res.status(401).json({ error: err.message || "Invalid token" });
-  }
-};
 
 /**
  * GET /users/me
@@ -36,8 +23,9 @@ const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) 
  */
 userRouter.get("/me", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const token = req.headers.authorization!.split(" ")[1];
-    const profile = await userService.getProfile(token);
+    const token = req.user!
+    const profile = await userService.getProfile(token.id);
+
     res.status(200).json(profile);
   } catch (err: any) {
     res.status(400).json({ error: err.message });

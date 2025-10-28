@@ -128,21 +128,17 @@ export class EventService {
       return db.attendance.create({ data: { userId, eventId, confirmed: true } });
   }
 
+
   // Buy Ticket
 async buyTicket(userId: number, eventId: number, quantity: number = 1) {
   const event = await this.getEventById(eventId);
   if (event.isFree) throw new Error("Este evento es gratuito, usa confirmAttendance");
 
-  const existingAttendance = await db.attendance.findMany({
-    where: { userId, eventId }
-  });
+  const totalBought =  totalTickets + quantity;
 
-  if (!existingAttendance){
-    throw new Error("errorr");
-  }
-
-  const totalBought = existingAttendance.
-  if (totalBought > 5) throw new Error("Máximo 5 tickets por usuario");
+  if (totalBought > 5) {
+    throw new Error("Máximo 5 tickets por usuario")
+  };
 
   if (event.maxAttendees && event.attendees.length + quantity > event.maxAttendees)
     throw new Error("No hay suficientes cupos");
@@ -223,4 +219,5 @@ async buyTicket(userId: number, eventId: number, quantity: number = 1) {
         orderBy: { date: "asc" }
       });
   }
+
 }
