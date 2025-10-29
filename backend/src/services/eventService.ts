@@ -129,47 +129,58 @@ export class EventService {
   }
 
 
-  // Buy Ticket
+// Buy Ticket
 async buyTicket(userId: number, eventId: number, quantity: number = 1) {
   const event = await this.getEventById(eventId);
   if (event.isFree) throw new Error("Este evento es gratuito, usa confirmAttendance");
 
-  const totalBought =  totalTickets + quantity;
+  // Verificar si el usuario ya tiene una asistencia registrada
+  const existingAttendance = await db.attendance.findFirst({
+    where: { userId, eventId },
+  });
+
+  // Calcular cuántos tickets lleva comprados
+  const totalTickets = existingAttendance?.ticketsBought ?? 0;
+  const totalBought = totalTickets + quantity;
 
   if (totalBought > 5) {
-    throw new Error("Máximo 5 tickets por usuario")
-  };
+    throw new Error("Máximo 5 tickets por usuario");
+  }
 
-  if (event.maxAttendees && event.attendees.length + quantity > event.maxAttendees)
+  // Verificar capacidad máxima del evento
+  if (event.maxAttendees && event.attendees.length + quantity > event.maxAttendees) {
     throw new Error("No hay suficientes cupos");
+  }
 
+  // Verificar saldo del usuario
   const user = await userService.getUserById(userId);
   const totalPrice = event.price * quantity;
 
   if (user.balance < totalPrice) throw new Error("Saldo insuficiente");
 
+  // Descontar el saldo del usuario
   await userService.subtractBalance(userId, totalPrice);
 
+  // Si ya tenía una asistencia, actualizamos la cantidad
   if (existingAttendance) {
-    // Actualiza los tickets ya comprados
     return db.attendance.update({
       where: { id: existingAttendance.id },
       data: {
         ticketsBought: totalBought,
         paid: true,
-        confirmed: true
-      }
+        confirmed: true,
+      },
     });
   } else {
-    // Crea una nueva asistencia con los tickets comprados
+    // Si no tenía, creamos una nueva asistencia
     return db.attendance.create({
       data: {
         userId,
         eventId,
         ticketsBought: quantity,
         paid: true,
-        confirmed: true
-      }
+        confirmed: true,
+      },
     });
   }
 }
