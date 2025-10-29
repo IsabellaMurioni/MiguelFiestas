@@ -1,6 +1,7 @@
 "use client"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
+
+import { Header } from "../components/Header"
+import Footer from "../components/Footer"
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronDown } from "lucide-react"
@@ -250,8 +251,8 @@ export default function HomePage() {
       {/* Featured Event Section */}
       {featuredEvent && (
         <section className="py-16 px-6">
-          <div className="container mx-auto">
-            <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-[32px] overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300">
+          <div className="container mx-auto max-w-5xl">
+            <div className="relative h-[400px] sm:h-[500px] rounded-[32px] overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300">
               <Image
                 src={featuredEvent.image || "/placeholder.svg"}
                 alt={featuredEvent.title}
