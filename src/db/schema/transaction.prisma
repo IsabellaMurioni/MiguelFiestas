@@ -1,8 +1,0 @@
-model Transaction {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  amount     Float
-  createdAt  DateTime @default(now())
-
-  user       User     @relation(fields: [userId], references: [id])
-}

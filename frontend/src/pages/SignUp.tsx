@@ -3,8 +3,12 @@ import { useState } from "react"
 import type React from "react"
 import Image from "next/image"
 
-export default function Login() {
+export default function SignUp() {
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    nickname: "",
+    dni: "",
     email: "",
     password: "",
   })
@@ -21,8 +25,8 @@ export default function Login() {
     setError("")
 
     // Basic validation
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all fields")
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      setError("Please fill in all required fields")
       return
     }
 
@@ -35,7 +39,7 @@ export default function Login() {
 
     try {
       // TODO: Replace with your actual API endpoint
-      // const response = await fetch('/api/auth/login', {
+      // const response = await fetch('/api/auth/signup', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(formData),
@@ -43,16 +47,16 @@ export default function Login() {
       //
       // if (!response.ok) {
       //   const data = await response.json()
-      //   throw new Error(data.message || 'Login failed')
+      //   throw new Error(data.message || 'Sign up failed')
       // }
       //
       // const data = await response.json()
-      // // Handle successful login (e.g., store token, redirect)
-      // console.log('Login successful:', data)
+      // // Handle successful signup (e.g., store token, redirect)
+      // console.log('Sign up successful:', data)
 
       console.log("Form data ready for backend:", formData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred during login")
+      setError(err instanceof Error ? err.message : "An error occurred during sign up")
     } finally {
       setIsLoading(false)
     }
@@ -75,9 +79,9 @@ export default function Login() {
       <div className="flex w-full lg:w-1/2 items-center justify-center px-6 pb-12 lg:p-6">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-3">
-            <h1 className="text-3xl font-light text-white tracking-tight">Log in Account</h1>
+            <h1 className="text-3xl font-light text-white tracking-tight">Sign up Account</h1>
             <p className="text-white/60 text-sm font-light tracking-wide">
-              Enter your personal data to access your account.
+              Enter your personal data to create your account.
             </p>
           </div>
 
@@ -87,6 +91,56 @@ export default function Login() {
                 <p className="text-red-400 text-sm font-light tracking-wide">{error}</p>
               </div>
             )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-white/80 text-xs font-medium tracking-wider uppercase">First Name</label>
+                <input
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="eg. Isabella"
+                  disabled={isLoading}
+                  className="w-full px-3 py-2 bg-black border border-white/10 text-white placeholder:text-white/30 focus:bg-black focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 rounded-[7px] font-light tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-white/80 text-xs font-medium tracking-wider uppercase">Last name</label>
+                <input
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="eg. Murioni"
+                  disabled={isLoading}
+                  className="w-full px-3 py-2 bg-black border border-white/10 text-white placeholder:text-white/30 focus:bg-black focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 rounded-[7px] font-light tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-white/80 text-xs font-medium tracking-wider uppercase">Nickname</label>
+              <input
+                name="nickname"
+                value={formData.nickname}
+                onChange={handleChange}
+                placeholder="eg. Isa"
+                disabled={isLoading}
+                className="w-full px-3 py-2 bg-black border border-white/10 text-white placeholder:text-white/30 focus:bg-black focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 rounded-[7px] font-light tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-white/80 text-xs font-medium tracking-wider uppercase">DNI</label>
+              <input
+                name="dni"
+                value={formData.dni}
+                onChange={handleChange}
+                placeholder="eg. 12345678"
+                disabled={isLoading}
+                className="w-full px-3 py-2 bg-black border border-white/10 text-white placeholder:text-white/30 focus:bg-black focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 rounded-[7px] font-light tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
 
             <div className="space-y-2">
               <label className="text-white/80 text-xs font-medium tracking-wider uppercase">Email</label>
@@ -120,13 +174,13 @@ export default function Login() {
               disabled={isLoading}
               className="w-full bg-transparent text-white border border-white hover:bg-white hover:text-black font-medium tracking-wider uppercase text-sm rounded-[7px] transition-all duration-200 py-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
             >
-              {isLoading ? "Logging in..." : "Log in"}
+              {isLoading ? "Signing up..." : "Sign up"}
             </button>
 
             <p className="text-center text-sm text-white/60 font-light tracking-wide">
-              Don't have an account?{" "}
-              <a href="/signup" className="text-white hover:text-white/80 font-medium transition-colors duration-200">
-                Sign up
+              Already have an account?{" "}
+              <a href="/login" className="text-white hover:text-white/80 font-medium transition-colors duration-200">
+                Log in
               </a>
             </p>
           </form>

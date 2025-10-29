@@ -6,7 +6,7 @@ import Events from "./pages/Events.tsx";
 import Balance from "./pages/Balance.tsx";
 import LogIn from "./pages/LogIn.tsx";
 import Profile from "./pages/Profile.tsx";
-import SignIn from "./pages/SignIn.tsx";
+import SignIn from "./pages/SignUp.tsx";
 
 function App() { 
   return (
