@@ -1,4 +1,5 @@
 import { Phone, Instagram, Facebook } from "lucide-react"
+import logo from "../assets/logo.png"
 
 export default function Footer() {
   return (
@@ -7,11 +8,7 @@ export default function Footer() {
         <div className="flex items-center justify-between">
           {/* Logo img*/}
           <a href="/" className="flex items-center">
-            <div className="text-white text-2xl font-light tracking-tight leading-tight">
-              mique
-              <br />
-              eventos.
-            </div>
+            <img src={logo} alt="Migue Eventos Logo" className="h-[80px]" />
           </a>
 
           {/* Social Icons */}

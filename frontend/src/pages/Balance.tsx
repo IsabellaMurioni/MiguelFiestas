@@ -2,8 +2,10 @@
 
 import { Header } from "../components/Header"
 import Footer from "../components/Footer"
-import Image from "next/image"
 import { useState, useEffect } from "react"
+import profileImg from "../assets/profile.jpg"
+import airbagImg from "../assets/airbag.jpeg"
+import breshImg from "../assets/bresh.jpeg"
 
 // Types for backend integration
 interface User {
@@ -58,14 +60,14 @@ export default function BalancePage() {
           id: "1",
           name: "Isabella's Account",
           email: "isabella@example.com",
-          profileImage: "/abstract-profile.png",
+          profileImage: profileImg,
         },
         balance: 500.0,
         transactions: [
           {
             id: "1",
             eventName: "Airbag River Plate",
-            eventImage: "/concert-crowd-red-lights-stage.jpg",
+            eventImage: airbagImg,
             date: "21 de diciembre",
             time: "21:00h",
             amount: -100,
@@ -74,7 +76,7 @@ export default function BalancePage() {
           {
             id: "2",
             eventName: "Bresh Estadio Geba",
-            eventImage: "/blue-concert-crowd-bresh-neon-lights.jpg",
+            eventImage: breshImg,
             date: "10 de diciembre",
             time: "23:00h",
             amount: -150,
@@ -141,11 +143,10 @@ export default function BalancePage() {
             {/* User Info */}
             <div className="flex items-center gap-4 pb-6 border-b border-white/10">
               <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden flex-shrink-0">
-                <Image
+                <img
                   src={balanceData.user.profileImage || "/placeholder.svg"}
                   alt={balanceData.user.name}
-                  fill
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <h1 className="text-lg sm:text-xl font-semibold text-white">{balanceData.user.name}</h1>
@@ -189,12 +190,11 @@ export default function BalancePage() {
               >
                 <div className="flex items-center gap-3 sm:gap-4">
                   {/* Event Image */}
-                  <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
+                  <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden flex-shrink-0">
+                    <img
                       src={transaction.eventImage || "/placeholder.svg"}
                       alt={transaction.eventName}
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
                     />
                   </div>
 

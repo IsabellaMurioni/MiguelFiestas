@@ -1,11 +1,14 @@
 "use client"
-
 import { Header } from "../components/Header"
 import Footer from "../components/Footer"
-import Image from "next/image"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { ChevronDown } from "lucide-react"
 import { useState, useEffect } from "react"
+import guidoImg from "../assets/guido.jpg"
+import patoImg from "../assets/pato.jpg"
+import gastonImg from "../assets/gaston.jpg"
+import homeImg from "../assets/home.jpeg"
+import airbagImg from "../assets/airbag.jpeg"
 
 interface EventCreator {
   id: string
@@ -55,23 +58,23 @@ export default function HomePage() {
       setEventCreators([
         {
           id: "1",
-          name: "Santino Pirraglia",
-          image: "/person-with-sunglasses-concert.jpg",
-          eventsCreated: 300,
+          name: "Guido Sardelli",
+          image: guidoImg,
+          eventsCreated: 120,
           category: "Concerts",
         },
         {
           id: "2",
-          name: "Santino Pirraglia",
-          image: "/person-with-guitar-wedding.jpg",
-          eventsCreated: 300,
+          name: "Pato Sardelli",
+          image: patoImg,
+          eventsCreated: 85,
           category: "Weddings",
         },
         {
           id: "3",
-          name: "Santino Pirraglia",
-          image: "/person-with-sunglasses-birthday.jpg",
-          eventsCreated: 300,
+          name: "Gaston Sardelli",
+          image: gastonImg,
+          eventsCreated: 42,
           category: "Birthdays",
         },
       ])
@@ -93,7 +96,7 @@ export default function HomePage() {
         title: "Airbag River Plate",
         date: "21",
         month: "DEC",
-        image: "/concert-crowd-red-lights-stage.jpg",
+        image: airbagImg,
         category: "Airbag",
         participants: 20000,
         isPaid: true,
@@ -150,10 +153,10 @@ export default function HomePage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-white tracking-tight">
-                    The One-Stop <span className="italic font-light">Platform</span>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight">
+                    The One-Stop <span className="italic font-bold">Platform</span>
                   </h1>
-                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-white tracking-tight">
+                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight">
                     for Event Creation.
                   </h2>
                 </div>
@@ -165,7 +168,7 @@ export default function HomePage() {
                 </p>
 
                 <Link
-                  href="/events"
+                  to="/events"
                   className="inline-block px-8 py-3 bg-white text-black rounded-full font-medium tracking-wider uppercase text-sm hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-200"
                 >
                   Explorar eventos
@@ -189,11 +192,9 @@ export default function HomePage() {
 
               <div className="relative">
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden border border-white/10">
-                  <Image
-                    src="/concert-festival-crowd-lights-stage.jpg"
+                  <img
+                    src={homeImg}
                     alt="Event"
-                    width={800}
-                    height={600}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -207,8 +208,8 @@ export default function HomePage() {
       <section className="py-16 px-6">
         <div className="container mx-auto">
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-white tracking-tight">
-              Top <span className="italic">Event Creators</span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+              Top <span className="italic font-bold">Event Creators</span>
             </h2>
             <p className="text-white/60 text-base font-light tracking-wide max-w-2xl mx-auto">
               Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup.
@@ -219,14 +220,13 @@ export default function HomePage() {
             {eventCreators.map((creator) => (
               <Link
                 key={creator.id}
-                href={`/creators/${creator.id}`}
+                to={`/creators/${creator.id}`}
                 className="group relative aspect-[3/4] rounded-3xl overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
               >
-                <Image
+                <img
                   src={creator.image || "/placeholder.svg"}
                   alt={creator.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
@@ -237,7 +237,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="absolute bottom-6 left-6 right-6 space-y-2">
-                  <h3 className="text-2xl font-light text-white tracking-tight">{creator.name}</h3>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">{creator.name}</h3>
                   <p className="text-white/60 text-sm font-light tracking-wide">
                     +{creator.eventsCreated} events created.
                   </p>
@@ -251,13 +251,12 @@ export default function HomePage() {
       {/* Featured Event Section */}
       {featuredEvent && (
         <section className="py-16 px-6">
-          <div className="container mx-auto max-w-5xl">
+          <div className="container mx-auto">
             <div className="relative h-[400px] sm:h-[500px] rounded-[32px] overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300">
-              <Image
+              <img
                 src={featuredEvent.image || "/placeholder.svg"}
                 alt={featuredEvent.title}
-                fill
-                className="object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
@@ -272,14 +271,14 @@ export default function HomePage() {
                 <p className="text-white/60 text-sm font-light tracking-wider uppercase">{featuredEvent.month}</p>
               </div>
 
-              <div className="absolute bottom-8 left-8 right-8 space-y-4">
+              <div className="absolute bottom-8 left-8 right-8 space-y-4 p-6">
                 <div className="flex items-center gap-3">
                   <span className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-white text-xs font-light tracking-wide border border-white/20">
                     {featuredEvent.category}
                   </span>
                 </div>
 
-                <h3 className="text-4xl md:text-5xl font-light text-white tracking-tight">{featuredEvent.title}</h3>
+                <h3 className="text-4xl md:text-5xl font-bold text-white tracking-tight">{featuredEvent.title}</h3>
 
                 <p className="text-white/80 text-base font-light tracking-wide max-w-2xl">
                   Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup,
@@ -288,13 +287,13 @@ export default function HomePage() {
 
                 <div className="flex flex-wrap items-center gap-4 pt-2">
                   <Link
-                    href={`/events/${featuredEvent.id}/buy`}
+                    to={`/events/${featuredEvent.id}/buy`}
                     className="px-8 py-3 bg-white text-black rounded-full font-medium tracking-wider uppercase text-sm hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-200"
                   >
                     Comprar entrada
                   </Link>
                   <Link
-                    href="/events"
+                    to="/events"
                     className="px-8 py-3 bg-transparent text-white border border-white/40 rounded-full font-medium tracking-wider uppercase text-sm hover:bg-white hover:text-black hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-200"
                   >
                     Ver más eventos
@@ -324,10 +323,10 @@ export default function HomePage() {
       <section className="py-16 px-6">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-white tracking-tight">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">
               We're here to answer
             </h2>
-            <p className="text-3xl md:text-4xl lg:text-5xl font-light text-white tracking-tight italic">
+            <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight italic">
               all your questions.
             </p>
           </div>

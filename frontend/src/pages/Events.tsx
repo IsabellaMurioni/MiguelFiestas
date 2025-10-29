@@ -3,9 +3,11 @@
 import { Header } from "../components/Header"
 import Footer from "../components/Footer"
 import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Search } from "lucide-react"
+import airbagImg from "../assets/airbag.jpeg"
+import breshImg from "../assets/bresh.jpeg"
+import rooftopImg from "../assets/rooftop.jpg"
 
 type Event = {
   id: string
@@ -50,7 +52,7 @@ export default function EventsPage() {
           description:
             "Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup, our platform makes it easy to create, share.",
           date: "2024-12-21",
-          image: "/concert-crowd-red-lights-stage.jpg",
+          image: airbagImg,
           organizerName: "Airbag",
           organizerLogo: "/airbag-logo.jpg",
           participants: 20000,
@@ -63,7 +65,7 @@ export default function EventsPage() {
           description:
             "Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup, our platform makes it easy to create, share.",
           date: "2024-12-10",
-          image: "/blue-concert-crowd-bresh-neon-lights.jpg",
+          image: breshImg,
           organizerName: "Bresh",
           organizerLogo: "/bresh-logo-pink.jpg",
           participants: 20000,
@@ -76,7 +78,7 @@ export default function EventsPage() {
           description:
             "Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup, our platform makes it easy to create, share.",
           date: "2024-12-10",
-          image: "/rooftop-city-night-lights-buenos-aires.jpg",
+          image: rooftopImg,
           organizerName: "Skybar",
           organizerLogo: "/skybar-logo.jpg",
           participants: 20000,
@@ -189,67 +191,66 @@ export default function EventsPage() {
         ) : filteredEvents.length === 0 ? (
           <div className="text-center text-white/60 py-12">No events found</div>
         ) : (
-          <div className="space-y-6 sm:space-y-8 max-w-5xl mx-auto">
+          <div className="space-y-6 sm:space-y-8 container mx-auto">
             {filteredEvents.map((event) => {
               const { day, month } = formatDate(event.date)
               return (
                 <Link
                   key={event.id}
-                  href={`/events/${event.id}`}
-                  className="group block relative bg-white/5 rounded-3xl overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300"
+                  to={`/events/${event.id}`}
+                  className="group block relative overflow-hidden rounded-[32px] border border-white/10 hover:border-white/20 transition-all duration-300"
                 >
-                  <div className="relative h-[400px] sm:h-[500px]">
-                    <Image src={event.image || "/placeholder.svg"} alt={event.name} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                  <div className="relative h-[400px] sm:h-[500px] overflow-hidden">
+                    <img
+                      src={event.image || "/placeholder.svg"}
+                      alt={event.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
                     {/* Event Badge */}
-                    <div className="absolute top-4 sm:top-6 left-4 sm:left-6">
-                      <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-red-900/80 backdrop-blur-sm rounded-full text-xs sm:text-sm text-white font-light">
-                        Evento pago
+                    <div className="absolute top-6 left-6">
+                      <span className="px-3 py-1 bg-red-900/80 backdrop-blur-sm rounded-full text-sm text-white font-light">
+                        {event.isPaid ? "Evento pago" : "Evento gratis"}
                       </span>
                     </div>
 
                     {/* Date Badge */}
-                    <div className="absolute top-4 sm:top-6 right-4 sm:right-6 text-right">
-                      <div className="text-2xl sm:text-3xl font-bold text-white">{day}</div>
-                      <div className="text-xs sm:text-sm text-white/60 uppercase">{month}</div>
+                    <div className="absolute top-6 right-6 text-right">
+                      <p className="text-5xl font-light text-white">{day}</p>
+                      <p className="text-white/60 text-sm font-light tracking-wider uppercase">{month}</p>
                     </div>
 
-                    {/* Event Info */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden flex-shrink-0">
-                          <Image
-                            src={event.organizerLogo || "/placeholder.svg"}
-                            alt={event.organizerName}
-                            width={40}
-                            height={40}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <span className="text-xs sm:text-sm text-white/80 font-light">{event.organizerName}</span>
+                    {/* Event Info - bottom overlay like featured */}
+                    <div className="absolute bottom-8 left-8 right-8 space-y-4 p-6">
+                      <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white font-light border border-white/20">
+                          {event.category}
+                        </span>
                       </div>
 
-                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-3 group-hover:text-white/90 transition-colors">
-                        {event.name}
-                      </h3>
+                      <h3 className="text-4xl md:text-5xl font-bold text-white tracking-tight">{event.name}</h3>
 
-                      <p className="text-xs sm:text-sm text-white/60 mb-4 sm:mb-6 line-clamp-2">{event.description}</p>
+                      <p className="text-white/80 text-base font-light tracking-wide max-w-2xl">{event.description}</p>
 
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <button className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-black rounded-full text-sm font-medium hover:bg-white/90 transition-colors">
+                      <div className="flex flex-wrap items-center gap-4 pt-2">
+                        <button className="px-8 py-3 bg-white text-black rounded-full font-medium tracking-wider uppercase text-sm hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-200">
                           Comprar entrada
                         </button>
+                        <Link
+                          to="/events"
+                          className="px-8 py-3 bg-transparent text-white border border-white/40 rounded-full font-medium tracking-wider uppercase text-sm hover:bg-white hover:text-black hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-200"
+                        >
+                          Ver más
+                        </Link>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 ml-auto">
                           <div className="flex -space-x-2">
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-black" />
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 border-2 border-black" />
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 border-2 border-black" />
+                            {[1, 2, 3].map((i) => (
+                              <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-white/20 to-white/10 border-2 border-black" />
+                            ))}
                           </div>
-                          <span className="text-xs sm:text-sm text-white/60">
-                            {formatParticipants(event.participants)} participantes
-                          </span>
+                          <p className="text-white/60 text-sm font-light tracking-wide">{formatParticipants(event.participants)} participantes</p>
                         </div>
                       </div>
                     </div>

@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react"
 import { useState } from "react"
+import logo from "../assets/logo.png"
 
 interface HeaderProps {
   currentPath?: string
@@ -28,11 +29,7 @@ export function Header({ currentPath = "/" }: HeaderProps) {
         <div className="hidden md:flex items-center justify-between">
           {/* Logo img*/}
           <a href="/" className="flex items-center">
-            <div className="text-white text-2xl font-light tracking-tight leading-tight">
-              mique
-              <br />
-              eventos.
-            </div>
+            <img src={logo} alt="Migue Eventos Logo" className="h-[80px]" />
           </a>
 
           {/* Navigation */}
@@ -72,11 +69,7 @@ export function Header({ currentPath = "/" }: HeaderProps) {
 
           {/* Centered Logo */}
           <a href="/" className="absolute left-1/2 -translate-x-1/2">
-            <div className="text-white text-xl font-light tracking-tight leading-tight text-center">
-              mique
-              <br />
-              eventos.
-            </div>
+            <img src={logo} alt="Mique Eventos Logo" className="h-6" />
           </a>
 
           {/* Spacer for layout balance */}

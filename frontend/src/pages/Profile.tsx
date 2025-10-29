@@ -3,8 +3,11 @@
 import { Header } from "../components/Header"
 import Footer from "../components/Footer"
 import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import { Link } from "react-router-dom"
+import profileImg from "../assets/profile.jpg"
+import airbagImg from "../assets/airbag.jpeg"
+import breshImg from "../assets/bresh.jpeg"
+import previaImg from "../assets/previa.jpg"
 
 type Event = {
   id: string
@@ -54,7 +57,7 @@ export default function ProfilePage() {
       const mockProfile: UserProfile = {
         name: "Isabella Murioni",
         email: "isabellamurioni@gmail.com",
-        avatar: "/abstract-profile.png",
+        avatar: profileImg,
       }
 
       const mockJoinedEvents: Event[] = [
@@ -64,9 +67,9 @@ export default function ProfilePage() {
           description:
             "Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup, our platform makes it easy to create, share.",
           date: "2024-12-21",
-          image: "/concert-crowd-red-lights-stage.jpg",
+          image: airbagImg,
           organizerName: "Airbag",
-          organizerLogo: "/airbag-logo.jpg",
+          organizerLogo: airbagImg,
           participants: 20000,
           isPaid: true,
           category: "Concerts",
@@ -77,9 +80,9 @@ export default function ProfilePage() {
           description:
             "Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup, our platform makes it easy to create, share.",
           date: "2024-12-10",
-          image: "/blue-concert-crowd-bresh-neon-lights.jpg",
+          image: breshImg,
           organizerName: "Bresh",
-          organizerLogo: "/bresh-logo-pink.jpg",
+          organizerLogo: breshImg,
           participants: 20000,
           isPaid: true,
           category: "Concerts",
@@ -93,9 +96,9 @@ export default function ProfilePage() {
           description:
             "Join a community built for connection. Whether you're hosting a concert, workshop, or casual meetup, our platform makes it easy to create, share.",
           date: "2024-12-15",
-          image: "/concert-festival-crowd-lights-stage.jpg",
+          image: previaImg,
           organizerName: "Isabella Murioni",
-          organizerLogo: "/abstract-profile.png",
+          organizerLogo: profileImg,
           participants: 500,
           isPaid: false,
           category: "Parties",
@@ -160,11 +163,9 @@ export default function ProfilePage() {
           <div className="bg-white/5 rounded-3xl border border-white/10 p-6 sm:p-8 mb-8 sm:mb-12 hover:border-white/20 transition-all duration-300">
             <div className="flex items-center gap-4 sm:gap-6">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden flex-shrink-0 border-2 border-white/20">
-                <Image
+                <img
                   src={profile.avatar || "/placeholder.svg"}
                   alt={profile.name}
-                  width={80}
-                  height={80}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -187,11 +188,15 @@ export default function ProfilePage() {
                   return (
                     <Link
                       key={event.id}
-                      href={`/events/${event.id}`}
+                      to={`/events/${event.id}`}
                       className="group block relative bg-white/5 rounded-3xl overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300"
                     >
                       <div className="relative h-[350px] sm:h-[400px]">
-                        <Image src={event.image || "/placeholder.svg"} alt={event.name} fill className="object-cover" />
+                        <img
+                          src={event.image || "/placeholder.svg"}
+                          alt={event.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
                         {/* Event Badge */}
@@ -211,11 +216,9 @@ export default function ProfilePage() {
                         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
                           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden flex-shrink-0">
-                              <Image
+                              <img
                                 src={event.organizerLogo || "/placeholder.svg"}
                                 alt={event.organizerName}
-                                width={32}
-                                height={32}
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -263,11 +266,15 @@ export default function ProfilePage() {
                   return (
                     <Link
                       key={event.id}
-                      href={`/events/${event.id}`}
+                      to={`/events/${event.id}`}
                       className="group block relative bg-white/5 rounded-3xl overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-300"
                     >
                       <div className="relative h-[350px] sm:h-[400px]">
-                        <Image src={event.image || "/placeholder.svg"} alt={event.name} fill className="object-cover" />
+                        <img
+                          src={event.image || "/placeholder.svg"}
+                          alt={event.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
                         {/* Event Badge */}
@@ -287,11 +294,9 @@ export default function ProfilePage() {
                         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
                           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 overflow-hidden flex-shrink-0">
-                              <Image
+                              <img
                                 src={event.organizerLogo || "/placeholder.svg"}
                                 alt={event.organizerName}
-                                width={32}
-                                height={32}
                                 className="w-full h-full object-cover"
                               />
                             </div>

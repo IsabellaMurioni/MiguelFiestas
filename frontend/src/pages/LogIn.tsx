@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import type React from "react"
-import Image from "next/image"
+import { Link } from "react-router-dom"
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -62,13 +62,13 @@ export default function Login() {
     <div className="flex flex-col lg:flex-row min-h-screen bg-black">
       <div className="flex lg:hidden items-center justify-center py-12 px-6">
         <div className="text-center">
-          <Image src="/mique-eventos-logo.jpg" alt="mique eventos" width={200} height={80} className="mx-auto" />
+          <img src="/mique-eventos-logo.jpg" alt="mique eventos" className="mx-auto w-[200px] h-auto" />
         </div>
       </div>
 
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12">
         <div className="w-[500px] h-[500px] flex items-center justify-center">
-          <Image src="/mique-eventos-logo.jpg" alt="mique eventos" width={400} height={160} />
+          <img src="/mique-eventos-logo.jpg" alt="mique eventos" className="w-[400px] h-auto" />
         </div>
       </div>
 
@@ -125,9 +125,9 @@ export default function Login() {
 
             <p className="text-center text-sm text-white/60 font-light tracking-wide">
               Don't have an account?{" "}
-              <a href="/signup" className="text-white hover:text-white/80 font-medium transition-colors duration-200">
+              <Link to="/signup" className="text-white hover:text-white/80 font-medium transition-colors duration-200">
                 Sign up
-              </a>
+              </Link>
             </p>
           </form>
         </div>
