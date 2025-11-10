@@ -4,6 +4,7 @@ import eventRouter from "./routers/eventRouter";
 import authRouter from "./routers/authRouter";
 
 import cookieParser from "cookie-parser";
+import cors from "cors"
 
 const app = express();
 
@@ -12,10 +13,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.use(cors({
+  origin: 'http://localhost:3001', // URL de Vite
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
+
 // Routers
-app.use("/users", userRouter);
-app.use("/events", eventRouter);
-app.use("/auth", authRouter);
+app.use("/api/users", userRouter);
+app.use("/api/events", eventRouter);
+app.use("/api/auth", authRouter);
 
 // Middleware global para manejar errores
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

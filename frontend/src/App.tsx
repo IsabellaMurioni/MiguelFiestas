@@ -1,24 +1,31 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import HomePage from './pages/Home'
-import LoginPage from './pages/LogIn'
-import SignupPage from './pages/SignUp'
-import EventsPage from './pages/Events'
-import BalancePage from './pages/Balance'
+import Login from './pages/LogIn'
+import Signup from './pages/SignUp'
 import ProfilePage from './pages/Profile'
+import BalancePage from './pages/Balance'
+import EventsPage from './pages/Events'
+import CreateEventPage from './pages/CreateEvents'
 
-export default function App() {
+const queryClient = new QueryClient()
+
+function App() {
   return (
-    <div className="min-h-full bg-black">
+    <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/events" element={<EventsPage />} />
-          <Route path="/balance" element={<BalancePage />} />
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/balance" element={<BalancePage />} />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path='/create-event' element={<CreateEventPage />} />
         </Routes>
       </Router>
-    </div>
+    </QueryClientProvider>
   )
 }
+
+export default App

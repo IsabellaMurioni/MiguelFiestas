@@ -56,7 +56,7 @@ export class EventService {
     category?: string;
     status?: string;
   }) {
-      const where: any = { status: { not: "DELETED" } };
+      const where: any = { status: { not: EventStatus.CANCELLED } };
 
       if (filters) {
         if (filters.free !== undefined) where.isFree = filters.free;

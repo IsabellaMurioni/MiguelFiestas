@@ -8,6 +8,7 @@ const jwtService = new JwtService();
 export class AuthService {
   // Login
   async login(email: string, password: string) {
+
     AuthValidation.validateEmailFormat(email);
     AuthValidation.validatePasswordNotEmpty(password);
 
@@ -20,7 +21,7 @@ export class AuthService {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) throw new Error("Contraseña incorrectos");
 
-    const accessToken = await jwtService.generateJsonWebAccessToken(user);
+    const accessToken = await jwtService.generateJsonWebAccessToken(user.id, user.email);
 
     return { user, accessToken };
   }

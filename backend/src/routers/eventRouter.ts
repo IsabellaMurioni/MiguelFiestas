@@ -1,15 +1,10 @@
 import { Router } from "express";
 import { EventService } from "../services/eventService";
-import { JwtService } from "../services/jwtService";
 
 const eventRouter = Router();
 const eventService = new EventService();
 
 import { requireAuth } from "../middleware/requireAuth";
-
-/**
- * Middleware auth
- */
 
 /**
  * POST /events
@@ -48,25 +43,43 @@ eventRouter.post("/:id/buy", requireAuth, async (req: any, res) => {
   }
 });
 
-/**
- * GET /events
- * Lista de eventos (con filtros opcionales)
- */
 eventRouter.get("/", async (req, res) => {
   try {
+    console.log('🔍 Query parameters recibidos:', req.query);
+    console.log('📝 Headers:', req.headers);
+
     const filters: any = {};
 
-    if (req.query.free !== undefined) filters.free = req.query.free === "true";
-    if (req.query.priceMin) filters.priceMin = Number(req.query.priceMin);
-    if (req.query.priceMax) filters.priceMax = Number(req.query.priceMax);
-    if (req.query.startDate) filters.startDate = new Date(String(req.query.startDate));
-    if (req.query.endDate) filters.endDate = new Date(String(req.query.endDate));
-    if (req.query.category) filters.category = String(req.query.category);
-    if (req.query.status) filters.status = String(req.query.status);
+    if (req.query.free !== undefined) {
+      console.log('🎫 Free filter:', req.query.free);
+      filters.free = req.query.free === "true";
+    }
+    if (req.query.priceMin) {
+      console.log('💰 Price min:', req.query.priceMin);
+      filters.priceMin = Number(req.query.priceMin);
+    }
+    if (req.query.priceMax) {
+      console.log('💰 Price max:', req.query.priceMax);
+      filters.priceMax = Number(req.query.priceMax);
+    }
+    if (req.query.category) {
+      console.log('📂 Category:', req.query.category);
+      filters.category = String(req.query.category);
+    }
+    if (req.query.status) {
+      console.log('📊 Status:', req.query.status);
+      filters.status = String(req.query.status);
+    }
+
+    console.log('🎯 Filtros aplicados:', filters);
 
     const events = await eventService.listEvents(filters);
+    
+    console.log('✅ Eventos encontrados:', events.length);
+    
     res.json(events);
   } catch (err: any) {
+    console.error('❌ Error en /events:', err);
     res.status(400).json({ error: err.message });
   }
 });

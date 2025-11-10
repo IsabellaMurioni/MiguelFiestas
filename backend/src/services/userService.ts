@@ -30,6 +30,36 @@ export class UserService {
 
   }
 
+  async getJoinedEvents(userId: number): Promise<any[]> {
+    
+    await this.getUserById(userId)
+
+    const attendances = await db.attendance.findMany({
+      where: { userId },
+      include: { 
+        event: true 
+      }
+    });
+  
+    return attendances.map((att: { event: any; }) => att.event);
+  }
+
+  async getCreatedEvents(userId: number): Promise<any[]> {
+    await this.getUserById(userId)
+
+    const events = await db.event.findMany({
+      where: { 
+        creatorId: userId,
+        status: { not: "CANCELLED" }
+      },
+      include: {
+        attendees: true
+      }
+    });
+
+    return events;
+  }
+
   // Get Profile
   async getProfile(userID: number) {
 

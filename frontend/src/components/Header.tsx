@@ -4,13 +4,9 @@ import { Menu } from "lucide-react"
 import { useState } from "react"
 import logo from "../assets/logo.png"
 
-interface HeaderProps {
-  currentPath?: string
-}
-
-export function Header({ currentPath = "/" }: HeaderProps) {
+export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const isActive = (path: string) => currentPath === path
+  const isActive = (path: string) => window.location.pathname === path
 
   const getNavLinkClasses = (path: string) => {
     const baseClasses = "px-8 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-200"
@@ -19,7 +15,7 @@ export function Header({ currentPath = "/" }: HeaderProps) {
       return `${baseClasses} bg-black text-white shadow-[0_0_15px_rgba(255,255,255,0.1),0_0_30px_rgba(255,255,255,0.05)]`
     }
 
-    return `${baseClasses} bg-transparent text-white/60 hover:text-white/90 hover:shadow-[0_0_10px_rgba(255,255,255,0.05)]`
+    return `${baseClasses} bg-transparent text-white/60 hover:text-white/90 hover:bg-black/30 hover:shadow-[0_0_10px_rgba(255,255,255,0.05)]`
   }
 
   return (
@@ -28,13 +24,13 @@ export function Header({ currentPath = "/" }: HeaderProps) {
         {/* Desktop Layout */}
         <div className="hidden md:flex items-center justify-between">
           {/* Logo img*/}
-          <a href="/" className="flex items-center">
-            <img src={logo} alt="Migue Eventos Logo" className="h-[80px]" />
+          <a href="/home" className="flex items-center">
+            <img src={logo} alt="Mique Events Logo" className="h-[80px]" />
           </a>
 
           {/* Navigation */}
           <nav className="flex items-center gap-4">
-            <a href="/" className={getNavLinkClasses("/")}>
+            <a href="/home" className={getNavLinkClasses("/home")}>
               HOME
             </a>
 
@@ -68,8 +64,8 @@ export function Header({ currentPath = "/" }: HeaderProps) {
           </button>
 
           {/* Centered Logo */}
-          <a href="/" className="absolute left-1/2 -translate-x-1/2">
-            <img src={logo} alt="Mique Eventos Logo" className="h-6" />
+          <a href="/home" className="absolute left-1/2 -translate-x-1/2">
+            <img src={logo} alt="Mique Events Logo" className="h-6" />
           </a>
 
           {/* Spacer for layout balance */}
@@ -79,7 +75,7 @@ export function Header({ currentPath = "/" }: HeaderProps) {
         {/* Mobile Menu - Added mobile navigation menu */}
         {mobileMenuOpen && (
           <nav className="md:hidden flex flex-col gap-3 mt-6 pb-4">
-            <a href="/" className={getNavLinkClasses("/")}>
+            <a href="/home" className={getNavLinkClasses("/home")}>
               HOME
             </a>
             <a href="/events" className={getNavLinkClasses("/events")}>

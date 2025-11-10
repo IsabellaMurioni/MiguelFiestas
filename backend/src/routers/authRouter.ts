@@ -9,10 +9,12 @@ const authRouter = Router();
 authRouter.post("/login", async (req: Request, res: Response) => {
   try {
 
+    console.log(req.body)
+
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email y contraseña requeridos" });
+      return res.status(400).json({ error: "Email y contraseña requeridos." });
     }
 
     const result = await authService.login(email, password);
@@ -21,6 +23,8 @@ authRouter.post("/login", async (req: Request, res: Response) => {
       httpOnly: true,
       sameSite: "strict"
     });
+
+    console.log("Login successful, token set in cookie.", result.accessToken);
 
     res.status(200).json({ message: "Login exitoso" });
 

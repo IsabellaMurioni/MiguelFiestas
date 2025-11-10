@@ -89,6 +89,34 @@ userRouter.get("/:id/transactions", requireAuth, async (req: AuthRequest, res: R
 });
 
 /**
+ * GET /users/me/joined-events
+ * Returns events the user has joined/attended
+ */
+userRouter.get("/me/joined-events", requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const events = await userService.getJoinedEvents(userId);
+    res.status(200).json(events);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /users/me/owned-events  
+ * Returns events created by the user
+ */
+userRouter.get("/me/created-events", requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const events = await userService.getCreatedEvents(userId);
+    res.status(200).json(events);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
  * POST /users/register
  * Registers a new user
  * Body: CreateUserBody

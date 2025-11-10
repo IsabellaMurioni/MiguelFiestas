@@ -1,18 +1,19 @@
 import jwt from "jsonwebtoken";
-import { JsonWebTokenBody } from "../utils/types";
 
-const secret_key = process.env.JWT_SECRET;
+const secret_key = process.env.SECRET_KEY;
 
 export class JwtService {
   
   // Json Web Access Token
-  async generateJsonWebAccessToken(user: JsonWebTokenBody) {
+  async generateJsonWebAccessToken(userID: number, email: string) {
+
       const token = jwt.sign(
-        { id: user.id, email: user.email },
+        { id: userID, email: email },
         secret_key as string,
         { expiresIn: "48h" }
       );
-      return token;
+
+      return token
   }
 
   // Verify token

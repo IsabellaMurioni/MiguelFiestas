@@ -1,15 +1,22 @@
+// src/pages/Login.tsx
 "use client"
+
 import { useState } from "react"
 import type React from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useLogin } from "../lib/hooks/useAuth"
+import type { LoginData } from "../lib/types/auth"
+import logo from "../assets/logo.png"
 
 export default function Login() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LoginData>({
     email: "",
     password: "",
   })
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const navigate = useNavigate()
+  
+  const loginMutation = useLogin()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -20,41 +27,23 @@ export default function Login() {
     e.preventDefault()
     setError("")
 
-    // Basic validation
+    // Validación básica
     if (!formData.email || !formData.password) {
-      setError("Please fill in all fields")
+      setError("Please complete all fields")
       return
     }
 
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters")
+      setError("Password must be at least 8 characters long")
       return
     }
 
-    setIsLoading(true)
-
     try {
-      // TODO: Replace with your actual API endpoint
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // })
-      //
-      // if (!response.ok) {
-      //   const data = await response.json()
-      //   throw new Error(data.message || 'Login failed')
-      // }
-      //
-      // const data = await response.json()
-      // // Handle successful login (e.g., store token, redirect)
-      // console.log('Login successful:', data)
-
-      console.log("Form data ready for backend:", formData)
+      await loginMutation.mutateAsync(formData)
+      // Redirect to home after successful login
+      navigate("/home")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred during login")
-    } finally {
-      setIsLoading(false)
+      setError(err instanceof Error ? err.message : "Error during login")
     }
   }
 
@@ -62,22 +51,22 @@ export default function Login() {
     <div className="flex flex-col lg:flex-row min-h-screen bg-black">
       <div className="flex lg:hidden items-center justify-center py-12 px-6">
         <div className="text-center">
-          <img src="/mique-eventos-logo.jpg" alt="mique eventos" className="mx-auto w-[200px] h-auto" />
+          <img src={logo} alt="Mique Events Logo" className="mx-auto w-[240px] h-auto" />
         </div>
       </div>
 
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-12">
         <div className="w-[500px] h-[500px] flex items-center justify-center">
-          <img src="/mique-eventos-logo.jpg" alt="mique eventos" className="w-[400px] h-auto" />
+          <img src={logo} alt="Mique Events Logo" className="ml-8 lg:ml-12 w-[520px] h-auto" />
         </div>
       </div>
 
-      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 pb-12 lg:p-6">
+  <div className="flex w-full lg:w-1/2 items-center justify-center px-6 pb-12 lg:p-6 mr-8 lg:mr-20">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-3">
-            <h1 className="text-3xl font-light text-white tracking-tight">Log in Account</h1>
+            <h1 className="text-3xl font-light text-white tracking-tight">Log In</h1>
             <p className="text-white/60 text-sm font-light tracking-wide">
-              Enter your personal data to access your account.
+              Enter your credentials to access your account.
             </p>
           </div>
 
@@ -95,8 +84,8 @@ export default function Login() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="eg. isabellamurioni@gmail.com"
-                disabled={isLoading}
+                placeholder="e.g. user@example.com"
+                disabled={loginMutation.isPending}
                 className="w-full px-3 py-2 bg-black border border-white/10 text-white placeholder:text-white/30 focus:bg-black focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 rounded-[7px] font-light tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
@@ -109,18 +98,18 @@ export default function Login() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter your password"
-                disabled={isLoading}
+                disabled={loginMutation.isPending}
                 className="w-full px-3 py-2 bg-black border border-white/10 text-white placeholder:text-white/30 focus:bg-black focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/30 rounded-[7px] font-light tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              <p className="text-xs text-white/40 font-light tracking-wide">Must at be least 8 characters</p>
+              <p className="text-xs text-white/40 font-light tracking-wide">Minimum 8 characters</p>
             </div>
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loginMutation.isPending}
               className="w-full bg-transparent text-white border border-white hover:bg-white hover:text-black font-medium tracking-wider uppercase text-sm rounded-[7px] transition-all duration-200 py-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white"
             >
-              {isLoading ? "Logging in..." : "Log in"}
+              {loginMutation.isPending ? "Signing in..." : "Log In"}
             </button>
 
             <p className="text-center text-sm text-white/60 font-light tracking-wide">
