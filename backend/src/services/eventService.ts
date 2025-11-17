@@ -12,38 +12,53 @@ export class EventService {
   async createEvent(userId: number, eventData: EventData) {
     EventValidation.validateEventData(eventData);
 
-      const isFree = !eventData.price || eventData.price <= 0;
+    const isFree = !eventData.price || eventData.price <= 0;
 
-      const event = await db.event.create({
-        data: {
-          title: eventData.title,
-          shortDesc: eventData.shortDesc,
-          longDesc: eventData.longDesc || "",
-          location: eventData.location,
-          date: eventData.date,
-          price: eventData.price || 0,
-          isFree: !eventData.price || eventData.price <= 0,
-          status: EventStatus.SCHEDULED,
-          category: Category.CONCERTS,
-          maxAttendees: eventData.maxAttendees ?? null,
-          images: eventData.images ? eventData.images.join(",") : null,
-          creatorId: userId,
-          attendees: { create: { userId } }
-        },
-        include: { attendees: true }
-      });
+    const event = await db.event.create({
+      data: {
+        title: eventData.title,
+        shortDesc: eventData.shortDesc,
+        longDesc: eventData.longDesc || "",
+        location: eventData.location,
+        date: eventData.date,
+        price: eventData.price || 0,
+        isFree: !eventData.price || eventData.price <= 0,
+        status: EventStatus.SCHEDULED,
+        category: eventData.category as Category, 
+        maxAttendees: eventData.maxAttendees ?? null,
+        creatorId: userId,
+        attendees: { 
+          create: { 
+            userId, 
+            confirmed: true,
+            paid: isFree, // Si es gratis, se marca como pagado automáticamente
+            ticketsBought: 1
+          } 
+        }
+      },
+      include: { 
+        attendees: true,
+        // Incluir imágenes si las hay
+        images: true 
+      }
+    });
 
-      return event;
+    return event;
   }
 
   // Get Event By Id
   async getEventById(eventId: number) {
-      const event = await db.event.findUnique({
-        where: { id: eventId },
-        include: { attendees: true, creator: true }
-      });
-      if (!event || event.status === "CANCELLED") throw new Error("Evento no encontrado");
-      return event;
+    const event = await db.event.findUnique({
+      where: { id: eventId },
+      include: { 
+        attendees: true, 
+        creator: true,
+        images: true
+      }
+    });
+    console.log(event);
+    if (!event || event.status === "CANCELLED") throw new Error("Event not found");
+    return event;
   }
 
   // List Events
@@ -56,179 +71,214 @@ export class EventService {
     category?: string;
     status?: string;
   }) {
-      const where: any = { status: { not: EventStatus.CANCELLED } };
+    const where: any = { status: { not: EventStatus.CANCELLED } };
 
-      if (filters) {
-        if (filters.free !== undefined) where.isFree = filters.free;
-        if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
-          where.price = {};
-          if (filters.priceMin !== undefined) where.price.gte = filters.priceMin;
-          if (filters.priceMax !== undefined) where.price.lte = filters.priceMax;
-        }
-        if (filters.startDate || filters.endDate) {
-          where.date = {};
-          if (filters.startDate) where.date.gte = filters.startDate;
-          if (filters.endDate) where.date.lte = filters.endDate;
-        }
-        if (filters.category) where.category = filters.category;
-        if (filters.status) where.status = filters.status;
+    if (filters) {
+      if (filters.free !== undefined) where.isFree = filters.free;
+      if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+        where.price = {};
+        if (filters.priceMin !== undefined) where.price.gte = filters.priceMin;
+        if (filters.priceMax !== undefined) where.price.lte = filters.priceMax;
       }
+      if (filters.startDate || filters.endDate) {
+        where.date = {};
+        if (filters.startDate) where.date.gte = filters.startDate;
+        if (filters.endDate) where.date.lte = filters.endDate;
+      }
+      if (filters.category) where.category = filters.category;
+      if (filters.status) where.status = filters.status;
+    }
 
-      const events = await db.event.findMany({
-        where,
-        orderBy: { date: "asc" },
-        include: { creator: true, attendees: true }
-      });
+    const events = await db.event.findMany({
+      where,
+      orderBy: { date: "asc" },
+      include: { 
+        creator: true, 
+        attendees: true,
+        images: true // Incluir imágenes en la lista
+      }
+    });
 
-      return events;
+    return events;
   }
 
   // Update Event
   async updateEvent(eventId: number, userId: number, updateData: Partial<EventData>) {
-      const event = await this.getEventById(eventId);
-      if (event.creatorId !== userId) throw new Error("No autorizado para modificar este evento");
+    const event = await this.getEventById(eventId);
+    if (event.creatorId !== userId) throw new Error("Not authorized to modify this event");
 
-      const data: any = { ...updateData };
+    const data: any = { ...updateData };
 
-      if (updateData.category) {
-        data.category = { set: updateData.category as Category };
+    if (updateData.category) {
+      data.category = updateData.category as Category;
+    }
+
+    return await db.event.update({
+      where: { id: eventId },
+      data,
+      include: {
+        images: true // Incluir imágenes al actualizar
       }
-
-      return await db.event.update({
-        where: { id: eventId },
-        data,
-      });
+    });
   }
-
 
   // Cancel Event Only For Creator
   async cancelEvent(eventId: number, userId: number) {
-      const event = await this.getEventById(eventId);
-      if (event.creatorId !== userId) throw new Error("No autorizado para cancelar este evento");
+    const event = await this.getEventById(eventId);
+    if (event.creatorId !== userId) throw new Error("Not authorized to cancel this event");
 
-      return db.event.update({
-        where: { id: eventId },
-        data: { status: "CANCELLED" },
-      });
+    return db.event.update({
+      where: { id: eventId },
+      data: { status: "CANCELLED" },
+      include: {
+        images: true // Incluir imágenes al cancelar
+      }
+    });
   }
 
   // Confirm Free Attendance 
   async confirmAttendance(userId: number, eventId: number) {
-      const event = await this.getEventById(eventId);
+    const event = await this.getEventById(eventId);
 
-      if (!event.isFree) throw new Error("Este evento requiere pago");
-      EventValidation.validateAttendance(event);
+    if (!event.isFree) throw new Error("This event requires payment");
+    EventValidation.validateAttendance(event);
 
-      const existing = await db.attendance.findFirst({
-        where: { userId, eventId }
+    const existing = await db.attendance.findFirst({
+      where: { userId, eventId }
+    });
+
+    if (existing) throw new Error("Attendance already confirmed");
+
+    // Create attendance record
+    const attendance = await db.attendance.create({ 
+      data: { 
+        userId, 
+        eventId, 
+        confirmed: true,
+        paid: true, // Evento gratis = pagado automáticamente
+        ticketsBought: 1
+      } 
+    });
+
+    // Increment user's confirmations counter
+    await userService.incrementConfirmations(userId);
+
+    return attendance;
+  }
+
+  // Buy Ticket
+  async buyTicket(userId: number, eventId: number, quantity: number = 1) {
+    const event = await this.getEventById(eventId);
+    if (event.isFree) throw new Error("This event is free, use confirmAttendance");
+
+    // Check user balance first
+    const user = await userService.getUserById(userId);
+    const totalPrice = event.price * quantity;
+
+    if (user.balance < totalPrice) throw new Error("Insufficient balance");
+
+    // Check if user already has attendance registered
+    const existingAttendance = await db.attendance.findFirst({
+      where: { userId, eventId },
+    });
+
+    // Calculate how many tickets have been purchased
+    const totalTickets = existingAttendance?.ticketsBought ?? 0;
+    const totalBought = totalTickets + quantity;
+
+    if (totalBought > 5) {
+      throw new Error("Maximum 5 tickets per person");
+    }
+
+    // Check maximum event capacity
+    if (event.maxAttendees && event.attendees.length + quantity > event.maxAttendees) {
+      throw new Error("Not enough capacity");
+    }
+
+    // Deduct user balance
+    await userService.subtractBalance(userId, totalPrice);
+
+    // Increment user's tickets bought counter only if new tickets are being added
+    const ticketsToAdd = existingAttendance ? quantity : quantity;
+    await userService.incrementTickets(userId, ticketsToAdd);
+
+    // If user already had attendance, update the quantity
+    if (existingAttendance) {
+      return db.attendance.update({
+        where: { id: existingAttendance.id },
+        data: {
+          ticketsBought: totalBought,
+          paid: true,
+          confirmed: true,
+        },
       });
-
-      if (existing) throw new Error("Asistencia ya confirmada");
-
-      return db.attendance.create({ data: { userId, eventId, confirmed: true } });
+    } else {
+      // If user did not have attendance, create new one
+      return db.attendance.create({
+        data: {
+          userId,
+          eventId,
+          ticketsBought: quantity,
+          paid: true,
+          confirmed: true,
+        },
+      });
+    }
   }
 
-
-// Buy Ticket
-async buyTicket(userId: number, eventId: number, quantity: number = 1) {
-  const event = await this.getEventById(eventId);
-  if (event.isFree) throw new Error("Este evento es gratuito, usa confirmAttendance");
-
-  // Verificar si el usuario ya tiene una asistencia registrada
-  const existingAttendance = await db.attendance.findFirst({
-    where: { userId, eventId },
-  });
-
-  // Calcular cuántos tickets lleva comprados
-  const totalTickets = existingAttendance?.ticketsBought ?? 0;
-  const totalBought = totalTickets + quantity;
-
-  if (totalBought > 5) {
-    throw new Error("Máximo 5 tickets por usuario");
-  }
-
-  // Verificar capacidad máxima del evento
-  if (event.maxAttendees && event.attendees.length + quantity > event.maxAttendees) {
-    throw new Error("No hay suficientes cupos");
-  }
-
-  // Verificar saldo del usuario
-  const user = await userService.getUserById(userId);
-  const totalPrice = event.price * quantity;
-
-  if (user.balance < totalPrice) throw new Error("Saldo insuficiente");
-
-  // Descontar el saldo del usuario
-  await userService.subtractBalance(userId, totalPrice);
-
-  // Si ya tenía una asistencia, actualizamos la cantidad
-  if (existingAttendance) {
-    return db.attendance.update({
-      where: { id: existingAttendance.id },
-      data: {
-        ticketsBought: totalBought,
-        paid: true,
-        confirmed: true,
-      },
-    });
-  } else {
-    // Si no tenía, creamos una nueva asistencia
-    return db.attendance.create({
-      data: {
-        userId,
-        eventId,
-        ticketsBought: quantity,
-        paid: true,
-        confirmed: true,
-      },
-    });
-  }
-}
-
-  async geAttendance(userId: number, eventId: number){
+  async getAttendance(userId: number, eventId: number){
     const attendance = await db.attendance.findFirst({
-      where: {eventId:eventId, userId: userId}
-    })
+      where: {eventId: eventId, userId: userId}
+    });
 
-    return attendance
+    return attendance;
   }
 
   // Cancel Attendance From An User
   async cancelAttendance(userId: number, eventId: number) {
-      const existing = await db.attendance.findFirst({
-        where: { userId, eventId }
-      });
-      if (!existing) throw new Error("Asistencia no encontrada");
+    const existing = await db.attendance.findFirst({
+      where: { userId, eventId }
+    });
+    if (!existing) throw new Error("Attendance not found");
 
-      return db.attendance.delete({
-        where: { id: existing.id }
-      });
+    return db.attendance.delete({
+      where: { id: existing.id }
+    });
   }
 
   // Cancel Attendance From A Creator
   async cancelOtherAttendee(creatorId: number, attendeeId: number, eventId: number) {
-      const event = await this.getEventById(eventId);
-      if (event.creatorId !== creatorId) throw new Error("No autorizado");
+    const event = await this.getEventById(eventId);
+    if (event.creatorId !== creatorId) throw new Error("No autorizado");
 
-      return this.cancelAttendance(attendeeId, eventId);
+    return this.cancelAttendance(attendeeId, eventId);
   }
 
   // History Of Attendance From An User
   async getUserAttendance(userId: number) {
-      return db.attendance.findMany({
-        where: { userId },
-        include: { event: true },
-        orderBy: { event: { date: "asc" } }
-      });
+    return db.attendance.findMany({
+      where: { userId },
+      include: { 
+        event: {
+          include: {
+            images: true // Incluir imágenes del evento
+          }
+        } 
+      },
+      orderBy: { event: { date: "asc" } }
+    });
   }
 
   // Events Created
   async getUserCreatedEvents(userId: number) {
-      return db.event.findMany({
-        where: { creatorId: userId, status: { not: "CANCELLED" } },
-        include: { attendees: true },
-        orderBy: { date: "asc" }
-      });
+    return db.event.findMany({
+      where: { creatorId: userId, status: { not: "CANCELLED" } },
+      include: { 
+        attendees: true,
+        images: true // Incluir imágenes
+      },
+      orderBy: { date: "asc" }
+    });
   }
 
 }

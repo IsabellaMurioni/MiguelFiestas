@@ -48,7 +48,7 @@ describe('AuthService', () => {
       ;(db.user.findUnique as jest.Mock).mockResolvedValue(null)
 
       await expect(authService.login('nonexistent@example.com', 'password'))
-        .rejects.toThrow('Email incorrecto.')
+        .rejects.toThrow('Incorrect email.')
     })
 
     it('should throw error for invalid password', async () => {
@@ -62,7 +62,7 @@ describe('AuthService', () => {
       ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
 
       await expect(authService.login('test@example.com', 'wrongpassword'))
-        .rejects.toThrow('Contraseña incorrectos')
+        .rejects.toThrow('Incorrect password.')
     })
   })
 })

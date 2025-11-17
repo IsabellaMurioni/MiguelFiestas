@@ -15,29 +15,34 @@ export default function BalancePage() {
   const [amount, setAmount] = useState("")
   const [amountError, setAmountError] = useState("")
 
+  const getInitials = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/)
+    return parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() : parts[0][0].toUpperCase()
+  }
+
   const validateAmount = (value: string): string => {
     if (!value.trim()) return "Amount is required"
-    
+
     const numValue = parseFloat(value)
     if (isNaN(numValue)) return "Please enter a valid number"
     if (numValue <= 0) return "Amount must be greater than 0"
-    if (numValue > 10000) return "Maximum amount is $10,000"
+    if (numValue > 50000) return "Maximum amount is $50,000"
     if (!/^\d*\.?\d{0,2}$/.test(value)) return "Maximum 2 decimal places allowed"
-    
+
     return ""
   }
 
   const handleAmountChange = (value: string) => {
-    // Solo permitir números y un punto decimal
+    // Only allow numbers and one decimal point
     const sanitizedValue = value.replace(/[^\d.]/g, '')
     
-    // Prevenir múltiples puntos decimales
+    // Prevent multiple decimal points
     const parts = sanitizedValue.split('.')
     if (parts.length > 2) {
       return
     }
     
-    // Limitar a 2 decimales
+    // Limit to 2 decimal places
     if (parts[1] && parts[1].length > 2) {
       return
     }
@@ -128,11 +133,14 @@ export default function BalancePage() {
             {/* User Info */}
             <div className="flex items-center gap-4 pb-6 border-b border-white/10">
               {/* Avatar con iniciales */}
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex-shrink-0 border-2 border-white/20 bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <span className="text-white text-lg sm:text-xl font-bold">
-                  {balanceData.user.name[0].toUpperCase()}
-                </span>
+              <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-white/10 via-white/40 to-white/10 animate-[spin_6s_linear_infinite] blur-sm"></div>
+                <div className="relative w-full h-full rounded-full bg-black border-2 border-white/20 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-[0_0_25px_rgba(255,255,255,0.1)]">
+                    {getInitials(balanceData.user.name)}
+                </div>
               </div>
+
+
               <h1 className="text-lg sm:text-xl font-semibold text-white">{balanceData.user.name}</h1>
             </div>
 
@@ -264,7 +272,7 @@ export default function BalancePage() {
 
                 {/* Quick Amount Buttons */}
                 <div className="grid grid-cols-3 gap-2">
-                  {[10, 20, 50, 100, 200, 500].map((quickAmount) => (
+                  {[1000, 3000, 6000, 9000, 15000, 30000].map((quickAmount) => (
                     <button
                       key={quickAmount}
                       onClick={() => handleAmountChange(quickAmount.toString())}

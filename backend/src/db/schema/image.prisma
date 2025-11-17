@@ -1,0 +1,10 @@
+model Image {
+
+    id            String      @id @unique @default(cuid())
+
+    url           String
+    eventID       Int
+
+    event         Event     @relation(fields: [eventID], references: [id])
+
+}

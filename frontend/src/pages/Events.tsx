@@ -5,7 +5,8 @@ import { useState, useEffect } from "react"
 import { Search, X } from "lucide-react"
 import { Header } from "../components/Header"
 import { eventsApi } from "../lib/api/events"
-
+import { useToast } from "../components/ToastProvider"
+import { useProfile } from "../lib/hooks/useProfile"
 
 import type { Event as BackendEvent } from "../lib/types/events"
 
@@ -21,6 +22,15 @@ export default function EventsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [ticketQuantity, setTicketQuantity] = useState(1)
   const [isPurchasing, setIsPurchasing] = useState(false)
+  const maxTickets = 5
+  const { showToast } = useToast()
+  const { data: profile } = useProfile()
+  const [confirmedEvents, setConfirmedEvents] = useState<Set<number>>(new Set())
+
+  const existingTicketsForSelected = selectedEvent ? (selectedEvent.attendees?.find((a: any) => a.userId === profile?.id)?.ticketsBought ?? 0) : 0
+  const remainingAllowed = Math.max(0, maxTickets - existingTicketsForSelected)
+  const isAtLimit = !selectedEvent?.isFree && remainingAllowed <= 0
+  const isConfirmedForUser = selectedEvent?.isFree && (confirmedEvents.has(selectedEvent.id) || selectedEvent.attendees?.some((a: any) => a.userId === profile?.id && a.confirmed))
 
   useEffect(() => {
     fetchEvents()
@@ -89,7 +99,10 @@ export default function EventsPage() {
   const openEventModal = (event: Event) => {
     setSelectedEvent(event)
     setIsModalOpen(true)
-    setTicketQuantity(1)
+     // Set initial quantity to 1 but cap to remaining allowed for this user
+     const existingTickets = event.attendees?.find((a: any) => a.userId === profile?.id)?.ticketsBought ?? 0
+     const remaining = Math.max(0, maxTickets - existingTickets)
+     setTicketQuantity(remaining > 0 ? 1 : 0)
   }
 
   const closeModal = () => {
@@ -105,19 +118,61 @@ export default function EventsPage() {
       if (!selectedEvent.isFree) {
         await eventsApi.buyTicket(selectedEvent.id, ticketQuantity)
         const total = selectedEvent.price * ticketQuantity
-        alert(`Purchase successful! Total: $${total.toLocaleString()}`)
+        showToast(`Purchase successful! Total: $${total.toLocaleString()}`, 'success', {
+          center: true,
+          actions: [
+            { label: 'Continue shopping', variant: 'secondary' },
+            { label: 'Go to my events', to: '/profile', variant: 'primary' },
+          ],
+          duration: 6000,
+        })
       } else {
         await eventsApi.confirmAttendance(selectedEvent.id)
-        alert("Attendance confirmed!")
+        showToast('Attendance confirmed!', 'success', {
+          center: true,
+          actions: [
+            { label: 'Continue shopping', variant: 'secondary' },
+            { label: 'Go to my events', to: '/profile', variant: 'primary' },
+          ],
+          duration: 6000,
+        })
+        // mark as confirmed locally so button disables immediately
+        if (selectedEvent && selectedEvent.id) {
+          setConfirmedEvents((prev) => new Set(prev).add(selectedEvent.id))
+        }
       }
       closeModal()
       fetchEvents() // Refresh the events list
     } catch (error) {
       console.error("Error processing purchase:", error)
-      alert("There was an error processing your purchase. Please try again.")
+      // Prefer server-provided message when available (axios interceptor also normalizes to error.message)
+      const serverMessage = (error as any)?.response?.data?.error ?? (error as any)?.response?.data?.message ?? (error as any)?.message ?? String(error)
+      // If it's an insufficient balance error, offer to go to balance page
+      if (serverMessage && serverMessage.toLowerCase().includes('insufficient')) {
+        showToast(serverMessage, 'error', {
+          center: true,
+          actions: [
+            { label: 'Go to Balance', to: '/balance', variant: 'primary' },
+          ],
+          duration: 8000,
+        })
+      } else {
+        showToast(serverMessage, 'error', { center: true, duration: 6000 })
+      }
     } finally {
       setIsPurchasing(false)
     }
+  }
+
+  const onBuyButtonClick = () => {
+    // visually disabled when hitting maxTickets but still allow click to show info
+    if (ticketQuantity > maxTickets) {
+      showToast(`Maximum ${maxTickets} tickets per person`, 'error', { center: true, duration: 4000 })
+      return
+    }
+
+    // otherwise proceed to purchase
+    void handlePurchase()
   }
 
   return (
@@ -181,7 +236,7 @@ export default function EventsPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
-                    <div className="absolute top-6 left-6">
+                    <div className="absolute top-10 left-12">
                       <span
                         className={`px-3 py-1 backdrop-blur-sm rounded-full text-sm text-white font-light ${
                           event.isFree ? 'bg-emerald-700/80' : 'bg-red-900/80'
@@ -191,14 +246,16 @@ export default function EventsPage() {
                       </span>
                     </div>
 
-                    <div className="absolute top-6 right-6 text-right">
+                    <div className="absolute top-10 right-10">
+                    <div className="flex flex-col items-center">
                       <p className="text-5xl font-light text-white">{day}</p>
                       <p className="text-white/60 text-sm font-light tracking-wider uppercase">{month}</p>
                     </div>
+                  </div>
 
                     <div className="absolute bottom-8 left-8 right-8 space-y-4 p-6">
                       <div className="flex items-center gap-3">
-                        <span className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white font-light border border-white/20">
+                        <span className="px-3 py-1  rounded-full text-xs text-white font-light border border-white/20">
                           {event.category}
                         </span>
                       </div>
@@ -266,7 +323,7 @@ export default function EventsPage() {
                 >
                   {selectedEvent.isFree ? 'Free Event' : 'Paid Event'}
                 </span>
-                <span className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white font-light border border-white/20">
+                <span className="px-3 py-1 rounded-full text-xs text-white font-light border border-white/20">
                   {selectedEvent.category}
                 </span>
               </div>
@@ -275,12 +332,12 @@ export default function EventsPage() {
                 <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight flex-1">
                   {selectedEvent.title}
                 </h2>
-                <div className="flex flex-col items-center justify-center w-16 h-16 border border-white/30 rounded-lg bg-white/5 backdrop-blur-sm flex-shrink-0 p-1">
-                  <p className="text-lg font-light text-white">{formatDate(selectedEvent.date).day}</p>
-                  <p className="text-white/60 text-xs font-light tracking-wider uppercase">
-                    {formatDate(selectedEvent.date).month}
-                  </p>
+                <div className="absolute top-10 left-10">
+                <div className="flex flex-col items-center">
+                  <p className="text-5xl font-light text-white">{formatDate(selectedEvent.date).day}</p>
+                  <p className="text-white/60 text-sm font-light tracking-wider uppercase">{formatDate(selectedEvent.date).month}</p>
                 </div>
+</div>
               </div>
 
               <p className="text-white/80 text-base leading-relaxed">{selectedEvent.longDesc}</p>
@@ -310,23 +367,32 @@ export default function EventsPage() {
 
               {!selectedEvent.isFree && (
                 <div className="space-y-4 pt-4 border-t border-white/10">
-                  <div className="flex items-center gap-4">
-                    <label className="text-white/80">Quantity:</label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
-                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors"
-                      >
-                        -
-                      </button>
-                      <span className="w-12 text-center text-white text-lg font-medium">{ticketQuantity}</span>
-                      <button
-                        onClick={() => setTicketQuantity(ticketQuantity + 1)}
-                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors"
-                      >
-                        +
-                      </button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <label className="text-white/80">Quantity:</label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors disabled:opacity-50"
+                          disabled={isPurchasing}
+                        >
+                          -
+                        </button>
+                        <span className="w-12 text-center text-white text-lg font-medium">
+                          {ticketQuantity}
+                        </span>
+                        <button
+                          onClick={() => setTicketQuantity(Math.min(remainingAllowed, ticketQuantity + 1))}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors disabled:opacity-50"
+                          disabled={isPurchasing || ticketQuantity > remainingAllowed}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
+                    <span className="text-white/60 text-sm">
+                      Remaining {remainingAllowed} of {maxTickets} tickets available for you
+                    </span>
                   </div>
 
                   {selectedEvent.price && (
@@ -342,11 +408,30 @@ export default function EventsPage() {
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
-                  onClick={handlePurchase}
-                  disabled={isPurchasing}
-                  className="flex-1 px-8 py-4 bg-white text-black rounded-full font-medium tracking-wider uppercase text-sm hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={onBuyButtonClick}
+                  // disabled when processing, when trying to buy more than remainingAllowed for paid events,
+                  // at limit (all 5 tickets bought), or when attendance already confirmed for free events
+                  disabled={
+                    isPurchasing ||
+                    (!selectedEvent?.isFree && ticketQuantity > remainingAllowed) ||
+                    isAtLimit ||
+                    isConfirmedForUser
+                  }
+                  aria-disabled={!isPurchasing && ticketQuantity > remainingAllowed}
+                  className={`flex-1 px-8 py-4 rounded-full font-medium tracking-wider uppercase text-sm transition-all duration-200 ${
+                    // disabled visual: dark background, white text
+                    isPurchasing
+                      ? 'bg-white text-black opacity-50 cursor-not-allowed hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+                      : (isAtLimit || isConfirmedForUser || (!selectedEvent?.isFree && ticketQuantity > remainingAllowed))
+                      ? 'bg-zinc-800 text-white opacity-80 cursor-not-allowed'
+                      : 'bg-white text-black hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+                  }`}
                 >
-                  {isPurchasing ? "Processing..." : !selectedEvent.isFree ? "Buy Ticket" : "Confirm Attendance"}
+                  {isPurchasing
+                    ? 'Processing...'
+                    : !selectedEvent?.isFree
+                    ? 'Buy Ticket'
+                    : (selectedEvent && (confirmedEvents.has(selectedEvent.id) || selectedEvent.attendees?.some((a: any) => a.userId === profile?.id && a.confirmed)) ? 'Attendance confirmed' : 'Confirm Attendance')}
                 </button>
                 <button
                   onClick={closeModal}

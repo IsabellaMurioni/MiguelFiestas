@@ -31,7 +31,7 @@ export default function Signup() {
     e.preventDefault()
     setError("")
 
-    // Validación básica
+    // Basic validation
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName || !formData.dni || !formData.nickName) {
       setError("Please complete all fields")
       return
@@ -53,7 +53,7 @@ export default function Signup() {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-black">
-      {/* Mismo layout que Login */}
+      {/* Same layout as Login */}
       <div className="flex lg:hidden items-center justify-center py-12 px-6">
           <div className="text-center">
             <img src={logo} alt="Mique Events Logo" className="mx-auto w-[240px] h-auto" />

@@ -7,14 +7,22 @@ export const api = axios.create({
   withCredentials: true,
 })
 
-// Interceptor para manejar errores globalmente
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: any) => {
     if (error.response?.status === 401) {
-      // Redirigir al login si no está autenticado
+      // Redirect to login if not authenticated
       window.location.href = '/'
     }
+
+    // Normalize error message from backend.
+    // Backend usually sends { error: '...' } or { message: '...' }
+    const serverMessage = error.response?.data?.error ?? error.response?.data?.message;
+    if (serverMessage) {
+      // Assign to error.message so axios/React Query display the text
+      error.message = serverMessage;
+    }
+
     return Promise.reject(error)
   }
 )

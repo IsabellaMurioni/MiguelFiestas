@@ -9,11 +9,15 @@ export const eventsApi = {
 
   getEventById: async (eventId: number): Promise<Event> => {
     const response = await api.get(`/events/${eventId}`)
+    console.log('Event data:', response.data)
     return response.data
   },
 
   createEvent: async (eventData: any) => {
     const response = await api.post('/events', eventData)
+
+    console.log(response)
+
     return response.data
   },
 

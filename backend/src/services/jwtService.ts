@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const secret_key = process.env.SECRET_KEY;
+const secret_key = process.env.JWT_SECRET;
 
 export class JwtService {
   

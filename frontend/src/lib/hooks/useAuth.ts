@@ -29,17 +29,17 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
-      // 1. Limpiar toda la cache de React Query
+      // 1. Clear all React Query cache
       queryClient.clear()
       
-      // 2. Redirigir al login después de un pequeño delay
+      // 2. Redirect to login after a small delay
       setTimeout(() => {
         window.location.href = '/'
       }, 100)
     },
     onError: (error) => {
       console.error('Logout failed:', error)
-      // Aún así limpiar el estado local y redirigir
+      // Still clear local state and redirect
       queryClient.clear()
       setTimeout(() => {
         window.location.href = '/'

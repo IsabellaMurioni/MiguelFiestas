@@ -1,4 +1,4 @@
-export type EventCategory = 'CONCERTS' | 'WORKSHOPS' | 'SPORTS' | 'ARTS' | 'FOOD' | 'OTHER'
+export type EventCategory = 'CONCERTS' | 'FESTIVALS' | 'THEMATIC_MEETINGS' | 'SPORTS' | 'NEIGHBORHOOD_GATHERINGS' | 'BIRTHDAYS' | 'WEDDINGS' | 'CONFERENCES' | 'EXHIBITIONS'
 
 export type EventStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED'
 

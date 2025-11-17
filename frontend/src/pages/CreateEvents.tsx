@@ -7,6 +7,19 @@ import { useCreateEvent } from "../lib/hooks/useEvents"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Upload, X } from "lucide-react"
+import type { EventCategory } from "../lib/types/events"
+
+const categoryLabels: Record<EventCategory, string> = {
+  CONCERTS: "Concerts",
+  FESTIVALS: "Festivals",
+  THEMATIC_MEETINGS: "Thematic Meetings",
+  SPORTS: "Sports",
+  NEIGHBORHOOD_GATHERINGS: "Neighborhood Gatherings",
+  BIRTHDAYS: "Birthdays",
+  WEDDINGS: "Weddings",
+  CONFERENCES: "Conferences",
+  EXHIBITIONS: "Exhibitions"
+}
 
 export default function CreateEventPage() {
   const createEventMutation = useCreateEvent()
@@ -20,7 +33,7 @@ export default function CreateEventPage() {
     time: "",
     location: "",
     price: "",
-    maxParticipants: "",
+    maxAttendees: "",
     category: "",
     isFree: false
   })
@@ -79,7 +92,9 @@ export default function CreateEventPage() {
     if (!formData.location.trim()) newErrors.location = "Location is required"
     if (!formData.category) newErrors.category = "Category is required"
     if (!formData.isFree && !formData.price) newErrors.price = "Price is required for paid events"
-    if (formData.maxParticipants && parseInt(formData.maxParticipants) < 1) newErrors.maxParticipants = "Must be at least 1"
+    if (formData.maxAttendees && parseInt(formData.maxAttendees) < 1) {
+      newErrors.maxAttendees = "Must be at least 1"
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -91,29 +106,52 @@ export default function CreateEventPage() {
     if (!validateForm()) return
 
     try {
-      const submitData = new FormData()
+      // Crear FormData en lugar de JSON
+      const formDataToSend = new FormData()
       
-      // Append form data
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'date' && formData.time) {
-          // Combine date and time
-          const dateTime = new Date(`${formData.date}T${formData.time}`)
-          submitData.append(key, dateTime.toISOString())
-        } else if (key !== 'time') {
-          submitData.append(key, value.toString())
+      // Agregar todos los campos del formulario
+      formDataToSend.append('title', formData.title)
+      formDataToSend.append('shortDesc', formData.shortDesc)
+      formDataToSend.append('longDesc', formData.longDesc)
+      formDataToSend.append('location', formData.location)
+      formDataToSend.append('category', formData.category)
+      formDataToSend.append('isFree', formData.isFree.toString())
+      
+      if (formData.date && formData.time) {
+        const dateTime = new Date(`${formData.date}T${formData.time}`).toISOString()
+        formDataToSend.append('date', dateTime)
+      }
+      
+      formDataToSend.append('price', formData.isFree ? '0' : formData.price)
+      
+      if (formData.maxAttendees) {
+        formDataToSend.append('maxAttendees', formData.maxAttendees)
+      }
+
+      // Agregar imágenes
+      images.forEach((image, index) => {
+        formDataToSend.append('images', image)
+      })
+
+      // Debug: mostrar contenido del FormData
+      console.log('Enviando FormData con:')
+      for (let [key, value] of formDataToSend.entries()) {
+        if (key === 'images') {
+          console.log(`${key}:`, (value as File).name)
+        } else {
+          console.log(`${key}:`, value)
         }
-      })
+      }
 
-      // Append images
-      images.forEach(image => {
-        submitData.append('images', image)
-      })
-
-      await createEventMutation.mutateAsync(submitData)
+      await createEventMutation.mutateAsync(formDataToSend)
       navigate('/profile')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create event:', error)
-      setErrors(prev => ({ ...prev, submit: "Failed to create event. Please try again." }))
+      console.error('Backend response:', error.response?.data)
+      setErrors(prev => ({ 
+        ...prev, 
+        submit: error.response?.data?.error || error.response?.data?.message || "Failed to create event. Please try again." 
+      }))
     }
   }
 
@@ -138,7 +176,7 @@ export default function CreateEventPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-8" encType="multipart/form-data">
             {/* Basic Information */}
             <div className="bg-white/5 rounded-3xl border border-white/10 p-6 sm:p-8">
               <h2 className="text-xl font-bold text-white mb-6">Basic Information</h2>
@@ -251,32 +289,29 @@ export default function CreateEventPage() {
                     className="w-full px-4 py-3 bg-black border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 rounded-xl transition-all duration-200"
                   >
                     <option value="">Select category</option>
-                    <option value="music">Music</option>
-                    <option value="sports">Sports</option>
-                    <option value="art">Art & Culture</option>
-                    <option value="food">Food & Drink</option>
-                    <option value="tech">Technology</option>
-                    <option value="business">Business</option>
-                    <option value="education">Education</option>
-                    <option value="other">Other</option>
+                    {Object.entries(categoryLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
                   </select>
                   {errors.category && <p className="text-red-400 text-xs mt-2">{errors.category}</p>}
                 </div>
 
                 <div>
                   <label className="block text-white/80 text-sm font-medium mb-2">
-                    Max Participants
+                    Max Attendees
                   </label>
                   <input
                     type="number"
-                    name="maxParticipants"
-                    value={formData.maxParticipants}
+                    name="maxAttendees"
+                    value={formData.maxAttendees}
                     onChange={handleInputChange}
                     min="1"
                     className="w-full px-4 py-3 bg-black border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 rounded-xl transition-all duration-200"
                     placeholder="Leave empty for unlimited"
                   />
-                  {errors.maxParticipants && <p className="text-red-400 text-xs mt-2">{errors.maxParticipants}</p>}
+                  {errors.maxAttendees && <p className="text-red-400 text-xs mt-2">{errors.maxAttendees}</p>}
                 </div>
               </div>
             </div>

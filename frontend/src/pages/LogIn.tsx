@@ -27,7 +27,7 @@ export default function Login() {
     e.preventDefault()
     setError("")
 
-    // Validación básica
+    // Basic validation
     if (!formData.email || !formData.password) {
       setError("Please complete all fields")
       return

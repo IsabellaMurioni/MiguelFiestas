@@ -7,6 +7,7 @@ import ProfilePage from './pages/Profile'
 import BalancePage from './pages/Balance'
 import EventsPage from './pages/Events'
 import CreateEventPage from './pages/CreateEvents'
+import { ToastProvider } from './components/ToastProvider'
 
 const queryClient = new QueryClient()
 
@@ -14,15 +15,17 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/balance" element={<BalancePage />} />
-          <Route path="/events" element={<EventsPage />} />
-          <Route path='/create-event' element={<CreateEventPage />} />
-        </Routes>
+        <ToastProvider>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/balance" element={<BalancePage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path='/create-event' element={<CreateEventPage />} />
+          </Routes>
+        </ToastProvider>
       </Router>
     </QueryClientProvider>
   )

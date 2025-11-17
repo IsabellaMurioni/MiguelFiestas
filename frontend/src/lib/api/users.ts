@@ -23,15 +23,21 @@ export const usersApi = {
     return response.data
   },
 
-  // Nueva función para obtener eventos a los que el usuario se unió
+  // Get events the user has joined
   getJoinedEvents: async (): Promise<Event[]> => {
     const response = await api.get('/users/me/joined-events')
     return response.data
   },
 
-  // Función para obtener eventos creados por el usuario
+  // Get events created by the user
   getOwnedEvents: async (): Promise<Event[]> => {
     const response = await api.get('/users/me/created-events')
+    return response.data
+  },
+
+  // Get top event creators
+  getTopCreators: async (limit: number = 3) => {
+    const response = await api.get('/users/top-creators', { params: { limit } })
     return response.data
   },
 

@@ -1,8 +1,10 @@
 import { Router, Request, Response } from "express";
 import { UserService } from "../services/userService";
+import { JwtService } from "../services/jwtService";
 
 const userRouter = Router();
 const userService = new UserService();
+const jwtService = new JwtService();
 
 import { requireAuth } from "../middleware/requireAuth";
 
@@ -117,6 +119,20 @@ userRouter.get("/me/created-events", requireAuth, async (req: AuthRequest, res: 
 });
 
 /**
+ * GET /users/top-creators
+ * Returns the top event creators
+ */
+userRouter.get("/top-creators", async (req: Request, res: Response) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 3;
+    const creators = await userService.getTopCreators(limit);
+    res.status(200).json(creators);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
  * POST /users/register
  * Registers a new user
  * Body: CreateUserBody
@@ -124,6 +140,21 @@ userRouter.get("/me/created-events", requireAuth, async (req: AuthRequest, res: 
 userRouter.post("/register", async (req: Request, res: Response) => {
   try {
     const user = await userService.createUser(req.body);
+
+    // Generate token and set cookie for automatic login after registration
+    try {
+      const accessToken = await jwtService.generateJsonWebAccessToken(user.id, user.email);
+      res.cookie("token", accessToken, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+      });
+    } catch (cookieErr) {
+      console.error("Error generating token/cookie after register:", cookieErr);
+      // Do not block user creation if there's an error setting the cookie,
+      // return the created user but without cookie.
+    }
+
     res.status(201).json({ data: user });
   } catch (err: any) {
     console.error(err);

@@ -78,7 +78,7 @@ export class UserService {
         },
       });
 
-      if (!user) throw new Error("Usuario no encontrado");
+      if (!user) throw new Error("User not found");
       return user;
   }
 
@@ -102,7 +102,7 @@ export class UserService {
   // Get User By Id
   async getUserById(userId: number) {
       const user = await db.user.findFirst({ where: { id: userId, deletedAt: null } });
-      if (!user) throw new Error("Usuario no encontrado");
+      if (!user) throw new Error("User not found");
       return user;
   }
 
@@ -117,7 +117,7 @@ export class UserService {
 
   // Add Balance (increment only)
   async addBalance(userId: number, amount: number) {
-      if (amount <= 0) throw new Error("Monto inválido");
+      if (amount <= 0) throw new Error("Invalid amount");
 
       const updatedUser = await db.user.update({
         where: { id: userId, deletedAt: null },
@@ -134,10 +134,10 @@ export class UserService {
 
   // Subtract Balance
   async subtractBalance(userId: number, amount: number) {
-      if (amount <= 0) throw new Error("Monto inválido");
+      if (amount <= 0) throw new Error("Invalid amount");
 
       const user = await this.getUserById(userId);
-      if (user.balance < amount) throw new Error("Saldo insuficiente");
+      if (user.balance < amount) throw new Error("Insufficient balance");
 
       const updatedUser = await db.user.update({
         where: { id: userId, deletedAt: null },
@@ -178,6 +178,37 @@ export class UserService {
       data: { confirmations: { increment: 1 } },
       select: { id: true, confirmations: true },
     });
+  }
+
+  // Get Top Event Creators
+  async getTopCreators(limit: number) {
+    const topCreators = await db.user.findMany({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        nickName: true,
+        firstName: true,
+        lastName: true,
+        eventsCreated: {
+          where: { status: { not: "CANCELLED" } },
+          select: { id: true }
+        }
+      },
+      orderBy: {
+        eventsCreated: {
+          _count: 'desc'
+        }
+      },
+      take: limit
+    });
+
+    return topCreators.map(creator => ({
+      id: creator.id,
+      nickName: creator.nickName,
+      firstName: creator.firstName,
+      lastName: creator.lastName,
+      eventsCreated: creator.eventsCreated.length
+    }));
   }
 
   

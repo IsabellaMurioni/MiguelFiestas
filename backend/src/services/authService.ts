@@ -16,10 +16,10 @@ export class AuthService {
       where: { email } 
     });
   
-    if (!user) throw new Error("Email incorrecto.");
+    if (!user) throw new Error("Incorrect email.");
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) throw new Error("Contraseña incorrectos");
+    if (!validPassword) throw new Error("Incorrect password.");
 
     const accessToken = await jwtService.generateJsonWebAccessToken(user.id, user.email);
 
@@ -34,7 +34,7 @@ export class AuthService {
       secure: process.env.NODE_ENV === "production",
     });
 
-    return { message: "Logout exitoso. Sesión finalizada." };
+    return { message: "Logout successful. Session ended." };
   }
 }
 

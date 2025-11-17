@@ -9,12 +9,10 @@ const authRouter = Router();
 authRouter.post("/login", async (req: Request, res: Response) => {
   try {
 
-    console.log(req.body)
-
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email y contraseña requeridos." });
+      return res.status(400).json({ error: "Email and password required." });
     }
 
     const result = await authService.login(email, password);
@@ -26,16 +24,16 @@ authRouter.post("/login", async (req: Request, res: Response) => {
 
     console.log("Login successful, token set in cookie.", result.accessToken);
 
-    res.status(200).json({ message: "Login exitoso" });
+    res.status(200).json({ message: "Login successful" });
 
   } catch (err: any) {
-    res.status(401).json({ error: err.message || "Credenciales inválidas" });
+    res.status(401).json({ error: err.message || "Invalid credentials" });
   }
 });
 
 /**
  * POST /auth/logout
- * Borra la cookie de sesión
+ * Clear session cookie
  */
 authRouter.post("/logout", (req: Request, res: Response) => {
   res.clearCookie("token", {
@@ -44,7 +42,7 @@ authRouter.post("/logout", (req: Request, res: Response) => {
     secure: process.env.NODE_ENV === "production"
   });
 
-  res.status(200).json({ message: "Logout exitoso. Sesión finalizada." });
+  res.status(200).json({ message: "Logout successful. Session ended." });
 });
 
 export default authRouter;
