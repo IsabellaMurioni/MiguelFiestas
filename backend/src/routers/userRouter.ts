@@ -139,6 +139,7 @@ userRouter.get("/top-creators", async (req: Request, res: Response) => {
  */
 userRouter.post("/register", async (req: Request, res: Response) => {
   try {
+
     const user = await userService.createUser(req.body);
 
     // Generate token and set cookie for automatic login after registration
@@ -157,7 +158,6 @@ userRouter.post("/register", async (req: Request, res: Response) => {
 
     res.status(201).json({ data: user });
   } catch (err: any) {
-    console.error(err);
     res.status(400).json({ error: err.message });
   }
 });

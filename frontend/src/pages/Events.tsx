@@ -1,8 +1,8 @@
 "use client"
 
 import Footer from "../components/Footer"
-import { useState, useEffect } from "react"
-import { Search, X } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Search, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Header } from "../components/Header"
 import { eventsApi } from "../lib/api/events"
 import { useToast } from "../components/ToastProvider"
@@ -11,6 +11,9 @@ import { useProfile } from "../lib/hooks/useProfile"
 import type { Event as BackendEvent } from "../lib/types/events"
 
 type Event = BackendEvent
+
+// ✅ Configuración del backend
+const BACKEND_BASE_URL = 'http://localhost:8080';
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
@@ -21,7 +24,8 @@ export default function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [ticketQuantity, setTicketQuantity] = useState(1)
-  const [isPurchasing, setIsPurchasing] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const maxTickets = 5
   const { showToast } = useToast()
   const { data: profile } = useProfile()
@@ -29,8 +33,12 @@ export default function EventsPage() {
 
   const existingTicketsForSelected = selectedEvent ? (selectedEvent.attendees?.find((a: any) => a.userId === profile?.id)?.ticketsBought ?? 0) : 0
   const remainingAllowed = Math.max(0, maxTickets - existingTicketsForSelected)
-  const isAtLimit = !selectedEvent?.isFree && remainingAllowed <= 0
-  const isConfirmedForUser = selectedEvent?.isFree && (confirmedEvents.has(selectedEvent.id) || selectedEvent.attendees?.some((a: any) => a.userId === profile?.id && a.confirmed))
+
+  const isEventCreator = selectedEvent?.creatorId === profile?.id;
+
+  // Obtener imágenes del evento seleccionado
+  const selectedEventImages = selectedEvent?.images || []
+  const hasMultipleImages = selectedEventImages.length > 1
 
   useEffect(() => {
     fetchEvents()
@@ -99,80 +107,155 @@ export default function EventsPage() {
   const openEventModal = (event: Event) => {
     setSelectedEvent(event)
     setIsModalOpen(true)
-     // Set initial quantity to 1 but cap to remaining allowed for this user
-     const existingTickets = event.attendees?.find((a: any) => a.userId === profile?.id)?.ticketsBought ?? 0
-     const remaining = Math.max(0, maxTickets - existingTickets)
-     setTicketQuantity(remaining > 0 ? 1 : 0)
+    setCurrentImageIndex(0) // Resetear índice al abrir modal
+    // Set initial quantity to 1 but cap to remaining allowed for this user
+    const existingTickets = event.attendees?.find((a: any) => a.userId === profile?.id)?.ticketsBought ?? 0
+    const remaining = Math.max(0, maxTickets - existingTickets)
+    setTicketQuantity(remaining > 0 ? 1 : 0)
   }
 
   const closeModal = () => {
     setIsModalOpen(false)
-    setTimeout(() => setSelectedEvent(null), 300)
+    setTimeout(() => {
+      setSelectedEvent(null)
+      setCurrentImageIndex(0)
+    }, 300)
   }
+
+  // Navegación del carrusel
+  const nextImage = useCallback(() => {
+    if (selectedEventImages.length > 0) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === selectedEventImages.length - 1 ? 0 : prevIndex + 1
+      )
+    }
+  }, [selectedEventImages.length])
+
+  const prevImage = useCallback(() => {
+    if (selectedEventImages.length > 0) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === 0 ? selectedEventImages.length - 1 : prevIndex - 1
+      )
+    }
+  }, [selectedEventImages.length])
+
+  // Auto-avance del carrusel
+  useEffect(() => {
+    if (isModalOpen && hasMultipleImages) {
+      const interval = setInterval(nextImage, 5000) // Cambiar cada 5 segundos
+      return () => clearInterval(interval)
+    }
+  }, [isModalOpen, hasMultipleImages, nextImage])
 
   const handlePurchase = async () => {
-    if (!selectedEvent) return
+  if (!selectedEvent) return
 
-    setIsPurchasing(true)
-    try {
-      if (!selectedEvent.isFree) {
-        await eventsApi.buyTicket(selectedEvent.id, ticketQuantity)
-        const total = selectedEvent.price * ticketQuantity
-        showToast(`Purchase successful! Total: $${total.toLocaleString()}`, 'success', {
-          center: true,
-          actions: [
-            { label: 'Continue shopping', variant: 'secondary' },
-            { label: 'Go to my events', to: '/profile', variant: 'primary' },
-          ],
-          duration: 6000,
-        })
-      } else {
-        await eventsApi.confirmAttendance(selectedEvent.id)
-        showToast('Attendance confirmed!', 'success', {
-          center: true,
-          actions: [
-            { label: 'Continue shopping', variant: 'secondary' },
-            { label: 'Go to my events', to: '/profile', variant: 'primary' },
-          ],
-          duration: 6000,
-        })
-        // mark as confirmed locally so button disables immediately
-        if (selectedEvent && selectedEvent.id) {
-          setConfirmedEvents((prev) => new Set(prev).add(selectedEvent.id))
-        }
+  try {
+    let result;
+    
+    if (!selectedEvent.isFree) {
+      result = await eventsApi.buyTicket(selectedEvent.id, ticketQuantity)
+      const total = selectedEvent.price * ticketQuantity
+      showToast(`Purchase successful! Total: $${total.toLocaleString()}`, 'success', {
+        center: true,
+        actions: [
+          { label: 'Continue shopping', variant: 'secondary' },
+          { label: 'Go to my events', to: '/profile', variant: 'primary' },
+        ],
+        duration: 6000,
+      })
+    } else {
+      result = await eventsApi.confirmAttendance(selectedEvent.id)
+      showToast('Attendance confirmed!', 'success', {
+        center: true,
+        actions: [
+          { label: 'Continue shopping', variant: 'secondary' },
+          { label: 'Go to my events', to: '/profile', variant: 'primary' },
+        ],
+        duration: 6000,
+      })
+      // mark as confirmed locally so button disables immediately
+      if (selectedEvent && selectedEvent.id) {
+        setConfirmedEvents((prev) => new Set(prev).add(selectedEvent.id))
       }
-      closeModal()
-      fetchEvents() // Refresh the events list
-    } catch (error) {
-      console.error("Error processing purchase:", error)
-      // Prefer server-provided message when available (axios interceptor also normalizes to error.message)
-      const serverMessage = (error as any)?.response?.data?.error ?? (error as any)?.response?.data?.message ?? (error as any)?.message ?? String(error)
-      // If it's an insufficient balance error, offer to go to balance page
-      if (serverMessage && serverMessage.toLowerCase().includes('insufficient')) {
-        showToast(serverMessage, 'error', {
-          center: true,
-          actions: [
-            { label: 'Go to Balance', to: '/balance', variant: 'primary' },
-          ],
-          duration: 8000,
-        })
-      } else {
-        showToast(serverMessage, 'error', { center: true, duration: 6000 })
-      }
-    } finally {
-      setIsPurchasing(false)
+    }
+
+    // ✅ ACTUALIZAR EL CONTADOR DE PARTICIPANTES INMEDIATAMENTE
+    if (result && result.attendeesCount !== undefined) {
+      setSelectedEvent(prev => prev ? { ...prev, attendeesCount: result.attendeesCount } : null)
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === selectedEvent.id 
+            ? { ...event, attendeesCount: result.attendeesCount }
+            : event
+        )
+      )
+    }
+
+    closeModal()
+    
+  } catch (error) {
+    console.error("Error processing purchase:", error)
+    // Prefer server-provided message when available (axios interceptor also normalizes to error.message)
+    const serverMessage = (error as any)?.response?.data?.error ?? (error as any)?.response?.data?.message ?? (error as any)?.message ?? String(error)
+    // If it's an insufficient balance error, offer to go to balance page
+    if (serverMessage && serverMessage.toLowerCase().includes('insufficient')) {
+      showToast(serverMessage, 'error', {
+        center: true,
+        actions: [
+          { label: 'Go to Balance', to: '/balance', variant: 'primary' },
+        ],
+        duration: 8000,
+      })
+    } else {
+      showToast(serverMessage, 'error', { center: true, duration: 6000 })
     }
   }
+}
 
-  const onBuyButtonClick = () => {
-    // visually disabled when hitting maxTickets but still allow click to show info
-    if (ticketQuantity > maxTickets) {
-      showToast(`Maximum ${maxTickets} tickets per person`, 'error', { center: true, duration: 4000 })
-      return
+  // ✅ MEJORADO: Función para obtener la URL de imagen del evento con cache de fallos
+  const getEventImage = (event: Event) => {
+    if (event.images && event.images.length > 0) {
+      const imageUrl = event.images[0].url;
+      
+      // Si la URL ya es completa, usarla directamente
+      if (imageUrl.startsWith('http')) {
+        return imageUrl;
+      }
+      
+      const fullImageUrl = `${BACKEND_BASE_URL}${imageUrl}`;
+      
+      // ✅ Verificar si esta imagen ya falló antes
+      if (failedImages.has(fullImageUrl)) {
+        return "/placeholder.svg";
+      }
+      
+      return fullImageUrl;
     }
+    return "/placeholder.svg";
+  }
 
-    // otherwise proceed to purchase
-    void handlePurchase()
+  // ✅ MEJORADO: Función para obtener la URL de imagen del carrusel con cache de fallos
+  const getCarouselImageUrl = (imageUrl: string) => {
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    const fullImageUrl = `${BACKEND_BASE_URL}${imageUrl}`;
+    
+    // ✅ Verificar si esta imagen ya falló antes
+    if (failedImages.has(fullImageUrl)) {
+      return "/placeholder.svg";
+    }
+    
+    return fullImageUrl;
+  }
+
+  // ✅ MEJORADO: Manejo de errores de imagen que evita el bucle
+  const handleImageError = (imageUrl: string) => {
+    console.log(`Image failed to load: ${imageUrl}`);
+    // ✅ Agregar al set de imágenes fallidas para evitar reintentos
+    setFailedImages(prev => new Set(prev).add(imageUrl));
   }
 
   return (
@@ -222,6 +305,8 @@ export default function EventsPage() {
           <div className="space-y-6 sm:space-y-8 container mx-auto">
             {filteredEvents.map((event) => {
               const { day, month } = formatDate(event.date)
+              const eventImageUrl = getEventImage(event)
+              
               return (
                 <button
                   key={event.id}
@@ -230,9 +315,10 @@ export default function EventsPage() {
                 >
                   <div className="relative h-[400px] sm:h-[500px] overflow-hidden">
                     <img
-                      src={event.images || "/placeholder.svg"}
+                      src={eventImageUrl}
                       alt={event.title}
                       className="absolute inset-0 w-full h-full object-cover"
+                      onError={() => handleImageError(eventImageUrl)}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
@@ -247,15 +333,15 @@ export default function EventsPage() {
                     </div>
 
                     <div className="absolute top-10 right-10">
-                    <div className="flex flex-col items-center">
-                      <p className="text-5xl font-light text-white">{day}</p>
-                      <p className="text-white/60 text-sm font-light tracking-wider uppercase">{month}</p>
+                      <div className="flex flex-col items-center">
+                        <p className="text-5xl font-light text-white">{day}</p>
+                        <p className="text-white/60 text-sm font-light tracking-wider uppercase">{month}</p>
+                      </div>
                     </div>
-                  </div>
 
                     <div className="absolute bottom-8 left-8 right-8 space-y-4 p-6">
                       <div className="flex items-center gap-3">
-                        <span className="px-3 py-1  rounded-full text-xs text-white font-light border border-white/20">
+                        <span className="px-3 py-1 rounded-full text-xs text-white font-light border border-white/20">
                           {event.category}
                         </span>
                       </div>
@@ -299,18 +385,74 @@ export default function EventsPage() {
           >
             <button
               onClick={closeModal}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
               aria-label="Close"
             >
               <X className="w-6 h-6 text-white" />
             </button>
 
+            {/* Carrusel de imágenes */}
             <div className="relative h-64 overflow-hidden rounded-t-3xl">
-              <img
-                src={selectedEvent.images || "/placeholder.svg"}
-                alt={selectedEvent.title}
-                className="w-full h-full object-cover"
-              />
+              {selectedEventImages.length > 0 ? (
+                <>
+                  <img
+                    src={getCarouselImageUrl(selectedEventImages[currentImageIndex].url)}
+                    alt={`${selectedEvent.title} - Image ${currentImageIndex + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={() => handleImageError(getCarouselImageUrl(selectedEventImages[currentImageIndex].url))}
+                  />
+                  
+                  {/* Controles del carrusel */}
+                  {hasMultipleImages && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          prevImage()
+                        }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5 text-white" />
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          nextImage()
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5 text-white" />
+                      </button>
+
+                      {/* Indicadores de posición */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                        {selectedEventImages.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setCurrentImageIndex(index)
+                            }}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              index === currentImageIndex 
+                                ? 'bg-white' 
+                                : 'bg-white/50 hover:bg-white/70'
+                            }`}
+                            aria-label={`Go to image ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                  <span className="text-white/60">No image available</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
             </div>
 
@@ -333,36 +475,40 @@ export default function EventsPage() {
                   {selectedEvent.title}
                 </h2>
                 <div className="absolute top-10 left-10">
-                <div className="flex flex-col items-center">
-                  <p className="text-5xl font-light text-white">{formatDate(selectedEvent.date).day}</p>
-                  <p className="text-white/60 text-sm font-light tracking-wider uppercase">{formatDate(selectedEvent.date).month}</p>
+                  <div className="flex flex-col items-center">
+                    <p className="text-5xl font-light text-white">{formatDate(selectedEvent.date).day}</p>
+                    <p className="text-white/60 text-sm font-light tracking-wider uppercase">
+                      {formatDate(selectedEvent.date).month}
+                    </p>
+                  </div>
                 </div>
-</div>
               </div>
 
               <p className="text-white/80 text-base leading-relaxed">{selectedEvent.longDesc}</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+                <div className="space-y-1">
+                  <p className="text-white/40 text-sm">Organizer</p>
+                  <p className="text-white font-medium">
+  {`${selectedEvent.creator?.firstName || ''} ${selectedEvent.creator?.lastName || ''}`.trim() || 'Unknown'}
+</p>
+                </div>
+                {selectedEvent.location && (
                   <div className="space-y-1">
-                    <p className="text-white/40 text-sm">Organizer</p>
-                    <p className="text-white font-medium">{selectedEvent.creator?.name || 'Unknown'}</p>
+                    <p className="text-white/40 text-sm">Location</p>
+                    <p className="text-white font-medium">{selectedEvent.location}</p>
                   </div>
-                  {selectedEvent.location && (
-                    <div className="space-y-1">
-                      <p className="text-white/40 text-sm">Location</p>
-                      <p className="text-white font-medium">{selectedEvent.location}</p>
-                    </div>
-                  )}
+                )}
+                <div className="space-y-1">
+                  <p className="text-white/40 text-sm">Participants</p>
+                  <p className="text-white font-medium">{formatParticipants(selectedEvent.attendeesCount || 0)}</p>
+                </div>
+                {!selectedEvent.isFree && (
                   <div className="space-y-1">
-                    <p className="text-white/40 text-sm">Participants</p>
-                    <p className="text-white font-medium">{formatParticipants(selectedEvent.attendeesCount || 0)}</p>
+                    <p className="text-white/40 text-sm">Price</p>
+                    <p className="text-white font-medium text-xl">${selectedEvent.price.toLocaleString()}</p>
                   </div>
-                  {!selectedEvent.isFree && (
-                    <div className="space-y-1">
-                      <p className="text-white/40 text-sm">Price</p>
-                      <p className="text-white font-medium text-xl">${selectedEvent.price.toLocaleString()}</p>
-                    </div>
-                  )}
+                )}
               </div>
 
               {!selectedEvent.isFree && (
@@ -373,8 +519,7 @@ export default function EventsPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
-                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors disabled:opacity-50"
-                          disabled={isPurchasing}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors"
                         >
                           -
                         </button>
@@ -383,8 +528,7 @@ export default function EventsPage() {
                         </span>
                         <button
                           onClick={() => setTicketQuantity(Math.min(remainingAllowed, ticketQuantity + 1))}
-                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors disabled:opacity-50"
-                          disabled={isPurchasing || ticketQuantity > remainingAllowed}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition-colors"
                         >
                           +
                         </button>
@@ -408,30 +552,20 @@ export default function EventsPage() {
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
-                  onClick={onBuyButtonClick}
-                  // disabled when processing, when trying to buy more than remainingAllowed for paid events,
-                  // at limit (all 5 tickets bought), or when attendance already confirmed for free events
-                  disabled={
-                    isPurchasing ||
-                    (!selectedEvent?.isFree && ticketQuantity > remainingAllowed) ||
-                    isAtLimit ||
-                    isConfirmedForUser
-                  }
-                  aria-disabled={!isPurchasing && ticketQuantity > remainingAllowed}
+                  onClick={handlePurchase}
+                  disabled={isEventCreator}
                   className={`flex-1 px-8 py-4 rounded-full font-medium tracking-wider uppercase text-sm transition-all duration-200 ${
-                    // disabled visual: dark background, white text
-                    isPurchasing
-                      ? 'bg-white text-black opacity-50 cursor-not-allowed hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]'
-                      : (isAtLimit || isConfirmedForUser || (!selectedEvent?.isFree && ticketQuantity > remainingAllowed))
-                      ? 'bg-zinc-800 text-white opacity-80 cursor-not-allowed'
+                    isEventCreator
+                      ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
                       : 'bg-white text-black hover:bg-white/90 hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]'
                   }`}
                 >
-                  {isPurchasing
-                    ? 'Processing...'
-                    : !selectedEvent?.isFree
-                    ? 'Buy Ticket'
-                    : (selectedEvent && (confirmedEvents.has(selectedEvent.id) || selectedEvent.attendees?.some((a: any) => a.userId === profile?.id && a.confirmed)) ? 'Attendance confirmed' : 'Confirm Attendance')}
+                  {isEventCreator 
+                    ? 'Event Creator' 
+                    : !selectedEvent?.isFree 
+                      ? 'Buy Ticket' 
+                      : 'Confirm Attendance'
+                  }
                 </button>
                 <button
                   onClick={closeModal}

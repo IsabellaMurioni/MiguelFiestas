@@ -6,6 +6,7 @@ import { EventValidation } from "../validations/eventValidation";
 
 const userService = new UserService();
 
+
 export class EventService {
 
   // Create New Event
@@ -31,19 +32,28 @@ export class EventService {
           create: { 
             userId, 
             confirmed: true,
-            paid: isFree, // Si es gratis, se marca como pagado automáticamente
+            paid: isFree, 
             ticketsBought: 1
           } 
         }
       },
       include: { 
         attendees: true,
-        // Incluir imágenes si las hay
         images: true 
       }
     });
 
-    return event;
+    if (isFree) {
+      await userService.incrementConfirmations(userId);
+    }
+
+    // Participants count
+    const attendeesCount = this.calculateAttendeesCount(event.attendees);
+
+    return {
+      ...event,
+      attendeesCount
+    };
   }
 
   // Get Event By Id
@@ -51,14 +61,29 @@ export class EventService {
     const event = await db.event.findUnique({
       where: { id: eventId },
       include: { 
-        attendees: true, 
-        creator: true,
+      attendees: true, 
+        creator: { 
+          select: {
+            id: true,
+            nickName: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        },
         images: true
       }
-    });
-    console.log(event);
+  });
+    
     if (!event || event.status === "CANCELLED") throw new Error("Event not found");
-    return event;
+    
+    // Participants
+    const attendeesCount = this.calculateAttendeesCount(event.attendees);
+    
+    return {
+      ...event,
+      attendeesCount
+    };
   }
 
   // List Events
@@ -93,13 +118,27 @@ export class EventService {
       where,
       orderBy: { date: "asc" },
       include: { 
-        creator: true, 
+        creator: { 
+          select: {
+            id: true,
+            nickName: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }, 
         attendees: true,
-        images: true // Incluir imágenes en la lista
+        images: true
       }
-    });
+  });
 
-    return events;
+    // Participants count for each event
+    const eventsWithCount = events.map(event => ({
+      ...event,
+      attendeesCount: this.calculateAttendeesCount(event.attendees)
+    }));
+
+    return eventsWithCount;
   }
 
   // Update Event
@@ -113,13 +152,22 @@ export class EventService {
       data.category = updateData.category as Category;
     }
 
-    return await db.event.update({
+    const updatedEvent = await db.event.update({
       where: { id: eventId },
       data,
       include: {
-        images: true // Incluir imágenes al actualizar
+        attendees: true,
+        images: true
       }
     });
+
+    // Participants count
+    const attendeesCount = this.calculateAttendeesCount(updatedEvent.attendees);
+
+    return {
+      ...updatedEvent,
+      attendeesCount
+    };
   }
 
   // Cancel Event Only For Creator
@@ -136,12 +184,17 @@ export class EventService {
     });
   }
 
-  // Confirm Free Attendance 
+  // Confirm Free Attendance - ESTE SÍ DEBE INCREMENTAR
   async confirmAttendance(userId: number, eventId: number) {
     const event = await this.getEventById(eventId);
 
     if (!event.isFree) throw new Error("This event requires payment");
     EventValidation.validateAttendance(event);
+
+    // ✅ VERIFICAR QUE NO SEA EL CREADOR DEL EVENTO
+    if (event.creatorId === userId) {
+      throw new Error("You cannot join your own event");
+    }
 
     const existing = await db.attendance.findFirst({
       where: { userId, eventId }
@@ -155,15 +208,15 @@ export class EventService {
         userId, 
         eventId, 
         confirmed: true,
-        paid: true, // Evento gratis = pagado automáticamente
+        paid: true, 
         ticketsBought: 1
       } 
     });
 
-    // Increment user's confirmations counter
+    // ✅ INCREMENTAR CONFIRMACIONES (solo si no es el creador)
     await userService.incrementConfirmations(userId);
 
-    return attendance;
+    return this.getEventById(eventId);
   }
 
   // Buy Ticket
@@ -190,8 +243,8 @@ export class EventService {
       throw new Error("Maximum 5 tickets per person");
     }
 
-    // Check maximum event capacity
-    if (event.maxAttendees && event.attendees.length + quantity > event.maxAttendees) {
+    // Check maximum event capacity - CORREGIDO: usar attendeesCount en lugar de event.attendees.length
+    if (event.maxAttendees && event.attendeesCount + quantity > event.maxAttendees) {
       throw new Error("Not enough capacity");
     }
 
@@ -204,7 +257,7 @@ export class EventService {
 
     // If user already had attendance, update the quantity
     if (existingAttendance) {
-      return db.attendance.update({
+      await db.attendance.update({
         where: { id: existingAttendance.id },
         data: {
           ticketsBought: totalBought,
@@ -214,7 +267,7 @@ export class EventService {
       });
     } else {
       // If user did not have attendance, create new one
-      return db.attendance.create({
+      await db.attendance.create({
         data: {
           userId,
           eventId,
@@ -224,6 +277,9 @@ export class EventService {
         },
       });
     }
+
+    // Return updated event with new attendees count
+    return this.getEventById(eventId);
   }
 
   async getAttendance(userId: number, eventId: number){
@@ -271,14 +327,38 @@ export class EventService {
 
   // Events Created
   async getUserCreatedEvents(userId: number) {
-    return db.event.findMany({
+    const events = await db.event.findMany({
       where: { creatorId: userId, status: { not: "CANCELLED" } },
       include: { 
-        attendees: true,
-        images: true // Incluir imágenes
-      },
-      orderBy: { date: "asc" }
-    });
+      attendees: true,
+      images: true,
+      creator: {
+        select: {
+          id: true,
+          nickName: true,
+          firstName: true,
+          lastName: true,
+          email: true
+        }
+      }
+    },
+    orderBy: { date: "asc" }
+  });
+
+    // Participants count for each event
+    const eventsWithCount = events.map(event => ({
+      ...event,
+      attendeesCount: this.calculateAttendeesCount(event.attendees)
+    }));
+
+    return eventsWithCount;
+  }
+
+  // Helper to calculate attendees count
+  private calculateAttendeesCount(attendees: any[]): number {
+    return attendees.reduce((total, attendee) => {
+      return total + (attendee.ticketsBought || 1);
+    }, 0);
   }
 
 }

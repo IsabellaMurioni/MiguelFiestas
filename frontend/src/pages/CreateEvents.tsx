@@ -38,6 +38,8 @@ export default function CreateEventPage() {
     isFree: false
   })
 
+  
+
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -91,7 +93,12 @@ export default function CreateEventPage() {
     if (!formData.time) newErrors.time = "Time is required"
     if (!formData.location.trim()) newErrors.location = "Location is required"
     if (!formData.category) newErrors.category = "Category is required"
-    if (!formData.isFree && !formData.price) newErrors.price = "Price is required for paid events"
+    
+    // ✅ Corrección en validación de precio
+    if (!formData.isFree && (!formData.price || parseFloat(formData.price) < 0)) {
+      newErrors.price = "Valid price is required for paid events"
+    }
+    
     if (formData.maxAttendees && parseInt(formData.maxAttendees) < 1) {
       newErrors.maxAttendees = "Must be at least 1"
     }
@@ -106,7 +113,6 @@ export default function CreateEventPage() {
     if (!validateForm()) return
 
     try {
-      // Crear FormData en lugar de JSON
       const formDataToSend = new FormData()
       
       // Agregar todos los campos del formulario
@@ -115,31 +121,33 @@ export default function CreateEventPage() {
       formDataToSend.append('longDesc', formData.longDesc)
       formDataToSend.append('location', formData.location)
       formDataToSend.append('category', formData.category)
-      formDataToSend.append('isFree', formData.isFree.toString())
+      formDataToSend.append('isFree', formData.isFree.toString()) // ✅ Convertir a string
       
       if (formData.date && formData.time) {
         const dateTime = new Date(`${formData.date}T${formData.time}`).toISOString()
         formDataToSend.append('date', dateTime)
       }
       
-      formDataToSend.append('price', formData.isFree ? '0' : formData.price)
+      // ✅ Corrección: precio siempre como string
+      const price = formData.isFree ? '0' : (formData.price || '0')
+      formDataToSend.append('price', price)
       
       if (formData.maxAttendees) {
         formDataToSend.append('maxAttendees', formData.maxAttendees)
       }
 
-      // Agregar imágenes
-      images.forEach((image, index) => {
+      // ✅ Corrección: agregar imágenes sin index
+      images.forEach((image) => {
         formDataToSend.append('images', image)
       })
 
-      // Debug: mostrar contenido del FormData
-      console.log('Enviando FormData con:')
+      // Debug mejorado
+      console.log('=== FormData Content ===')
       for (let [key, value] of formDataToSend.entries()) {
         if (key === 'images') {
-          console.log(`${key}:`, (value as File).name)
+          console.log(`images: File - ${(value as File).name}`)
         } else {
-          console.log(`${key}:`, value)
+          console.log(`${key}: ${value}`)
         }
       }
 
@@ -147,7 +155,11 @@ export default function CreateEventPage() {
       navigate('/profile')
     } catch (error: any) {
       console.error('Failed to create event:', error)
-      console.error('Backend response:', error.response?.data)
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      })
       setErrors(prev => ({ 
         ...prev, 
         submit: error.response?.data?.error || error.response?.data?.message || "Failed to create event. Please try again." 
@@ -176,7 +188,7 @@ export default function CreateEventPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-8" encType="multipart/form-data">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
             <div className="bg-white/5 rounded-3xl border border-white/10 p-6 sm:p-8">
               <h2 className="text-xl font-bold text-white mb-6">Basic Information</h2>

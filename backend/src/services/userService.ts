@@ -7,6 +7,8 @@ const jwtService = new JwtService();
 
 export class UserService {
 
+  
+
   // Register
   async createUser(body: CreateUserBody) {
 
@@ -37,11 +39,35 @@ export class UserService {
     const attendances = await db.attendance.findMany({
       where: { userId },
       include: { 
-        event: true 
+      event: {
+        include: {
+          images: true,
+          attendees: true,
+          creator: { 
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          }
+        }
       }
-    });
+    }
+  });
   
-    return attendances.map((att: { event: any; }) => att.event);
+     // ✅ CALCULAR attendeesCount PARA CADA EVENTO
+    return attendances.map((att: { event: any; }) => {
+      const event = att.event;
+      const attendeesCount = event.attendees.reduce((total: number, attendee: any) => {
+        return total + (attendee.ticketsBought || 1);
+      }, 0);
+      
+      return {
+        ...event,
+        attendeesCount // ✅ AGREGAR LA PROPIEDAD CALCULADA
+      };
+    });
   }
 
   async getCreatedEvents(userId: number): Promise<any[]> {
@@ -53,11 +79,30 @@ export class UserService {
         status: { not: "CANCELLED" }
       },
       include: {
-        attendees: true
+      images: true,
+      attendees: true,
+      creator: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true
+        }
       }
-    });
+    }
+  });
 
-    return events;
+    // ✅ CALCULAR attendeesCount PARA CADA EVENTO
+    return events.map(event => {
+      const attendeesCount = event.attendees.reduce((total: number, attendee: any) => {
+        return total + (attendee.ticketsBought || 1);
+      }, 0);
+      
+      return {
+        ...event,
+        attendeesCount // ✅ AGREGAR LA PROPIEDAD CALCULADA
+      };
+    });
   }
 
   // Get Profile
@@ -173,11 +218,23 @@ export class UserService {
 
   // Increment Attendance Confirmations
   async incrementConfirmations(userId: number) {
-    return db.user.update({
+    console.log(`📈 Before increment - User ID: ${userId}`);
+    
+    const userBefore = await db.user.findUnique({
+      where: { id: userId },
+      select: { confirmations: true }
+    });
+    console.log(`📈 Before increment - Confirmations:`, userBefore?.confirmations);
+    
+    const updatedUser = await db.user.update({
       where: { id: userId, deletedAt: null },
       data: { confirmations: { increment: 1 } },
       select: { id: true, confirmations: true },
     });
+    
+    console.log(`📈 After increment - Confirmations:`, updatedUser.confirmations);
+    
+    return updatedUser;
   }
 
   // Get Top Event Creators

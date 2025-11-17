@@ -2,6 +2,15 @@ import { api } from '../../utils/api'
 import type { UserProfile } from '../types/auth'
 import type { Event } from '../types/events'
 
+// ✅ Función auxiliar para calcular attendeesCount
+const calculateAttendeesCount = (attendees: any[] | undefined): number => {
+  if (!attendees || !Array.isArray(attendees)) return 0;
+  
+  return attendees.reduce((total, attendee) => {
+    return total + (attendee.ticketsBought || 1);
+  }, 0);
+}
+
 export const usersApi = {
   getProfile: async (): Promise<UserProfile> => {
     const response = await api.get('/users/me')
@@ -23,16 +32,16 @@ export const usersApi = {
     return response.data
   },
 
-  // Get events the user has joined
   getJoinedEvents: async (): Promise<Event[]> => {
     const response = await api.get('/users/me/joined-events')
-    return response.data
+    console.log('✅ Joined events FROM BACKEND:', response.data)
+    return response.data // ✅ Ya viene con attendeesCount calculado
   },
 
-  // Get events created by the user
   getOwnedEvents: async (): Promise<Event[]> => {
     const response = await api.get('/users/me/created-events')
-    return response.data
+    console.log('✅ Owned events FROM BACKEND:', response.data)
+    return response.data // ✅ Ya viene con attendeesCount calculado
   },
 
   // Get top event creators
@@ -40,5 +49,4 @@ export const usersApi = {
     const response = await api.get('/users/top-creators', { params: { limit } })
     return response.data
   },
-
 }

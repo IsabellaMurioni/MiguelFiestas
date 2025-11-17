@@ -9,7 +9,7 @@ export class JwtService {
 
       const token = jwt.sign(
         { id: userID, email: email },
-        secret_key as string,
+        secret_key,
         { expiresIn: "48h" }
       );
 

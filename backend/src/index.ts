@@ -3,24 +3,26 @@ import { userRouter } from "./routers/userRouter";
 import eventRouter from "./routers/eventRouter";
 import authRouter from "./routers/authRouter";
 
+import path from "path";
+
 import cookieParser from "cookie-parser";
 import cors from "cors"
 
 const app = express();
 
-// Middleware to parse JSON and URL-encoded data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use(cors({
-  origin: 'http://localhost:3001', // Vite URL
+  origin: 'http://localhost:3001',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
 // Routers
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use("/api/users", userRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/auth", authRouter);

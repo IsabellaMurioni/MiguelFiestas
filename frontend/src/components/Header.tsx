@@ -1,8 +1,9 @@
 "use client"
 
-import { Menu } from "lucide-react"
+import { Menu, LogOut } from "lucide-react"
 import { useState } from "react"
 import logo from "../assets/logo.png"
+import { authApi } from "../lib/api/auth"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -43,13 +44,32 @@ export function Header() {
             </a>
           </nav>
 
-          {/* My Profile Button - Added thin white border */}
-          <a
-            href="/profile"
-            className="px-8 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-200 text-white border border-white hover:bg-white hover:text-black"
-          >
-            MY PROFILE
-          </a>
+          {/* My Profile Button - Added thin white border and logout icon */}
+          <div className="flex items-center gap-3">
+            <a
+              href="/profile"
+              className="px-8 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-200 text-white border border-white hover:bg-white hover:text-black"
+            >
+              MY PROFILE
+            </a>
+
+            <button
+              onClick={async () => {
+                try {
+                  await authApi.logout()
+                } catch (err) {
+                  console.error('Logout failed', err)
+                } finally {
+                  // Redirect to landing/login page after logout
+                  window.location.href = '/'
+                }
+              }}
+              title="Logout"
+              className="p-2 rounded-full bg-transparent text-white/80 hover:bg-white/10 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Mobile Layout - Added mobile version with hamburger on left and centered logo */}
@@ -90,6 +110,24 @@ export function Header() {
             >
               MY PROFILE
             </a>
+            <button
+              onClick={async () => {
+                try {
+                  await authApi.logout()
+                } catch (err) {
+                  console.error('Logout failed', err)
+                } finally {
+                  window.location.href = '/'
+                }
+              }}
+              title="Logout"
+              className="mt-3 px-8 py-2.5 rounded-full text-sm font-medium tracking-wide transition-all duration-200 text-white border border-white hover:bg-white hover:text-black text-center"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <LogOut className="w-4 h-4" />
+                Logout
+              </div>
+            </button>
           </nav>
         )}
       </div>

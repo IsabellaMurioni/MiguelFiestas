@@ -2,6 +2,12 @@ export type EventCategory = 'CONCERTS' | 'FESTIVALS' | 'THEMATIC_MEETINGS' | 'SP
 
 export type EventStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED'
 
+type Image = {
+  id: string,
+  url: string,
+  eventID: number
+}
+
 export interface Event {
   id: number
   title: string
@@ -14,7 +20,7 @@ export interface Event {
   status: EventStatus
   category: EventCategory
   maxAttendees: number | null
-  images: string | null
+  images: Image[]
   creatorId: number
   creator?: {
     name: string

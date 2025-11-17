@@ -7,7 +7,10 @@ import { useProfile, useJoinedEvents, useOwnedEvents, useUpdateProfile } from ".
 import type { UserProfile } from "../lib/types/auth"
 import type { Event } from "../lib/types/events"
 import { useState, useEffect } from "react"
-import { Edit, X, Plus } from "lucide-react"
+import { Edit, X, Plus, ChevronLeft, ChevronRight } from "lucide-react"
+
+// ✅ Configuración del backend
+const BACKEND_BASE_URL = 'http://localhost:8080';
 
 export default function ProfilePage() {
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile()
@@ -17,29 +20,11 @@ export default function ProfilePage() {
   
   const [selectedJoinedEvent, setSelectedJoinedEvent] = useState<Event | null>(null)
   const [isJoinedModalOpen, setIsJoinedModalOpen] = useState(false)
-
-  const openJoinedModal = (event: Event) => {
-    setSelectedJoinedEvent(event)
-    setIsJoinedModalOpen(true)
-  }
-
-  const closeJoinedModal = () => {
-    setIsJoinedModalOpen(false)
-    setTimeout(() => setSelectedJoinedEvent(null), 300)
-  }
+  const [joinedEventImageIndex, setJoinedEventImageIndex] = useState(0)
 
   const [selectedOwnedEvent, setSelectedOwnedEvent] = useState<Event | null>(null)
   const [isOwnedModalOpen, setIsOwnedModalOpen] = useState(false)
-
-  const openOwnedModal = (event: Event) => {
-    setSelectedOwnedEvent(event)
-    setIsOwnedModalOpen(true)
-  }
-
-  const closeOwnedModal = () => {
-    setIsOwnedModalOpen(false)
-    setTimeout(() => setSelectedOwnedEvent(null), 300)
-  }
+  const [ownedEventImageIndex, setOwnedEventImageIndex] = useState(0)
 
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -53,6 +38,34 @@ export default function ProfilePage() {
     email: ""
   })
 
+  // ✅ AGREGAR ESTOS CONSOLE.LOG PARA DEBUGGEAR
+  useEffect(() => {
+    console.log("🚀 JOINED EVENTS:", joinedEvents)
+    console.log("📊 OWNED EVENTS:", ownedEvents)
+    
+    if (joinedEvents.length > 0) {
+      const firstEvent = joinedEvents[0];
+      console.log("🔍 FIRST JOINED EVENT:", {
+        title: firstEvent.title,
+        attendees: firstEvent.attendees,
+        attendeesCount: firstEvent.attendeesCount,
+        hasAttendeesCount: 'attendeesCount' in firstEvent
+      });
+    }
+    
+    if (ownedEvents.length > 0) {
+      const firstEvent = ownedEvents[0];
+      console.log("🔍 FIRST OWNED EVENT:", {
+        title: firstEvent.title,
+        attendees: firstEvent.attendees,
+        attendeesCount: firstEvent.attendeesCount,
+        hasAttendeesCount: 'attendeesCount' in firstEvent
+      });
+    }
+  }, [joinedEvents, ownedEvents])
+
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+
   // Inicializar el formulario cuando el perfil se carga
   useEffect(() => {
     if (profile) {
@@ -64,6 +77,30 @@ export default function ProfilePage() {
     }
   }, [profile])
 
+    // En tu ProfilePage, modifica los console.log para ver el creator:
+  useEffect(() => {
+    console.log("🚀 JOINED EVENTS:", joinedEvents)
+    console.log("📊 OWNED EVENTS:", ownedEvents)
+    
+    if (joinedEvents.length > 0) {
+      const firstEvent = joinedEvents[0];
+      console.log("🔍 FIRST JOINED EVENT:", {
+        title: firstEvent.title,
+        creator: firstEvent.creator, // ✅ VERIFICAR SI VIENE EL CREATOR
+        attendeesCount: firstEvent.attendeesCount,
+      });
+    }
+    
+    if (ownedEvents.length > 0) {
+      const firstEvent = ownedEvents[0];
+      console.log("🔍 FIRST OWNED EVENT:", {
+        title: firstEvent.title,
+        creator: firstEvent.creator, // ✅ VERIFICAR SI VIENE EL CREATOR
+        attendeesCount: firstEvent.attendeesCount,
+      });
+    }
+  }, [joinedEvents, ownedEvents])
+
   const isLoading = profileLoading || joinedLoading || ownedLoading
   const hasError = profileError || joinedError || ownedError
 
@@ -74,13 +111,18 @@ export default function ProfilePage() {
     return { day, month }
   }
 
-  const formatParticipants = (attendees: any[] | undefined) => {
-    const count = attendees?.length || 0
-    if (count >= 1000) {
-      return `+${Math.floor(count / 1000)}k`
-    }
-    return `+${count}`
-  }
+  const formatParticipants = (event: Event) => {
+  console.log(`📊 Formatting participants for: ${event.title}`, {
+    attendeesCount: event.attendeesCount,
+    hasProperty: 'attendeesCount' in event
+  });
+  
+  const count = event.attendeesCount || 0;
+  const result = count >= 1000 ? `+${Math.floor(count / 1000)}k` : `+${count}`;
+  
+  console.log(`🎯 Result: ${result}`);
+  return result;
+}
 
   const getFullName = (profile: UserProfile) => {
     return `${profile.firstName} ${profile.lastName}`
@@ -90,30 +132,121 @@ export default function ProfilePage() {
     return `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase()
   }
 
-  // Función para obtener la URL de la imagen del evento
-  const getEventImageUrl = (event: Event): string => {
+  // ✅ FUNCIÓN MEJORADA para obtener la URL de la imagen del evento
+  const getEventImageUrl = (event: Event, imageIndex: number = 0): string => {
     // Si event.images existe y es un array
     if (event.images && Array.isArray(event.images)) {
       // Si el array no está vacío
       if (event.images.length > 0) {
-        // Si el primer elemento es un objeto con propiedad 'url'
-        if (typeof event.images[0] === 'object' && event.images[0] !== null && 'url' in event.images[0]) {
-          return (event.images[0] as any).url
+        const imageIndexToUse = Math.min(imageIndex, event.images.length - 1)
+        
+        // Si el elemento es un objeto con propiedad 'url'
+        if (typeof event.images[imageIndexToUse] === 'object' && event.images[imageIndexToUse] !== null && 'url' in event.images[imageIndexToUse]) {
+          const imageUrl = (event.images[imageIndexToUse] as any).url;
+          return getFullImageUrl(imageUrl);
         }
-        // Si el primer elemento es una string (URL directa)
-        else if (typeof event.images[0] === 'string') {
-          return event.images[0]
+        // Si el elemento es una string (URL directa)
+        else if (typeof event.images[imageIndexToUse] === 'string') {
+          const imageUrl = event.images[imageIndexToUse];
+          return getFullImageUrl(imageUrl);
         }
       }
     }
     
     // Si event.images es una string directa (backward compatibility)
     if (typeof event.images === 'string') {
-      return event.images
+      return getFullImageUrl(event.images);
     }
     
     // Fallback a imagen placeholder
     return "/placeholder.svg"
+  }
+
+  // ✅ Función auxiliar para obtener URL completa
+  const getFullImageUrl = (imageUrl: string): string => {
+    if (!imageUrl) return "/placeholder.svg";
+    
+    // Si la URL ya es completa, usarla directamente
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    const fullImageUrl = `${BACKEND_BASE_URL}${imageUrl}`;
+    
+    // ✅ Verificar si esta imagen ya falló antes
+    if (failedImages.has(fullImageUrl)) {
+      return "/placeholder.svg";
+    }
+    
+    return fullImageUrl;
+  }
+
+  // ✅ Manejo de errores de imagen que evita el bucle
+  const handleImageError = (imageUrl: string) => {
+    console.log(`Image failed to load: ${imageUrl}`);
+    // ✅ Agregar al set de imágenes fallidas para evitar reintentos
+    setFailedImages(prev => new Set(prev).add(imageUrl));
+  }
+
+  const openJoinedModal = (event: Event) => {
+    setSelectedJoinedEvent(event)
+    setIsJoinedModalOpen(true)
+    setJoinedEventImageIndex(0)
+  }
+
+  const closeJoinedModal = () => {
+    setIsJoinedModalOpen(false)
+    setTimeout(() => {
+      setSelectedJoinedEvent(null)
+      setJoinedEventImageIndex(0)
+    }, 300)
+  }
+
+  const openOwnedModal = (event: Event) => {
+    setSelectedOwnedEvent(event)
+    setIsOwnedModalOpen(true)
+    setOwnedEventImageIndex(0)
+  }
+
+  const closeOwnedModal = () => {
+    setIsOwnedModalOpen(false)
+    setTimeout(() => {
+      setSelectedOwnedEvent(null)
+      setOwnedEventImageIndex(0)
+    }, 300)
+  }
+
+  // Navegación de imágenes en modales
+  const nextJoinedImage = () => {
+    if (selectedJoinedEvent?.images && selectedJoinedEvent.images.length > 0) {
+      setJoinedEventImageIndex(prev => 
+        prev === selectedJoinedEvent.images.length - 1 ? 0 : prev + 1
+      )
+    }
+  }
+
+  const prevJoinedImage = () => {
+    if (selectedJoinedEvent?.images && selectedJoinedEvent.images.length > 0) {
+      setJoinedEventImageIndex(prev => 
+        prev === 0 ? selectedJoinedEvent.images.length - 1 : prev - 1
+      )
+    }
+  }
+
+  const nextOwnedImage = () => {
+    if (selectedOwnedEvent?.images && selectedOwnedEvent.images.length > 0) {
+      setOwnedEventImageIndex(prev => 
+        prev === selectedOwnedEvent.images.length - 1 ? 0 : prev + 1
+      )
+    }
+  }
+
+  const prevOwnedImage = () => {
+    if (selectedOwnedEvent?.images && selectedOwnedEvent.images.length > 0) {
+      setOwnedEventImageIndex(prev => 
+        prev === 0 ? selectedOwnedEvent.images.length - 1 : prev - 1
+      )
+    }
   }
 
   const validateForm = () => {
@@ -311,10 +444,7 @@ export default function ProfilePage() {
                           src={eventImageUrl}
                           alt={event.title}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            // Si la imagen falla al cargar, usar placeholder
-                            (e.target as HTMLImageElement).src = "/placeholder.svg"
-                          }}
+                          onError={() => handleImageError(eventImageUrl)}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
@@ -359,7 +489,7 @@ export default function ProfilePage() {
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white/20 to-white/10 border-2 border-black" />
                               </div>
                               <p className="text-white/60 text-sm font-light tracking-wide">
-                                {formatParticipants(event.attendees)} participants
+                                {formatParticipants(event)} participants
                               </p>
                             </div>
                           </div>
@@ -405,9 +535,7 @@ export default function ProfilePage() {
                           src={eventImageUrl}
                           alt={event.title}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.svg"
-                          }}
+                          onError={() => handleImageError(eventImageUrl)}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
@@ -452,7 +580,7 @@ export default function ProfilePage() {
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white/20 to-white/10 border-2 border-black" />
                               </div>
                               <p className="text-white/60 text-sm font-light tracking-wide">
-                                {formatParticipants(event.attendees)} participants
+                                {formatParticipants(event)} participants
                               </p>
                             </div>
                           </div>
@@ -584,6 +712,7 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Joined Event Modal con Carrusel */}
       {isJoinedModalOpen && selectedJoinedEvent && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
@@ -595,23 +724,78 @@ export default function ProfilePage() {
           >
             <button
               onClick={closeJoinedModal}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
               aria-label="Close modal"
             >
               <X className="w-6 h-6 text-white" />
             </button>
 
+            {/* Carrusel de imágenes para Joined Events */}
             <div className="relative h-64 overflow-hidden rounded-t-3xl">
-              <img
-                src={getEventImageUrl(selectedJoinedEvent)}
-                alt={selectedJoinedEvent.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/placeholder.svg"
-                }}
-              />
+              {selectedJoinedEvent.images && selectedJoinedEvent.images.length > 0 ? (
+                <>
+                  <img
+                    src={getEventImageUrl(selectedJoinedEvent, joinedEventImageIndex)}
+                    alt={`${selectedJoinedEvent.title} - Image ${joinedEventImageIndex + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={() => handleImageError(getEventImageUrl(selectedJoinedEvent, joinedEventImageIndex))}
+                  />
+                  
+                  {/* Controles del carrusel */}
+                  {selectedJoinedEvent.images.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          prevJoinedImage()
+                        }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5 text-white" />
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          nextJoinedImage()
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5 text-white" />
+                      </button>
+
+                      {/* Indicadores de posición */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                        {selectedJoinedEvent.images.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setJoinedEventImageIndex(index)
+                            }}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              index === joinedEventImageIndex 
+                                ? 'bg-white' 
+                                : 'bg-white/50 hover:bg-white/70'
+                            }`}
+                            aria-label={`Go to image ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                  <span className="text-white/60">No image available</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
-              <div className="absolute top-10 left-10">
+              
+              {/* Fecha en el modal */}
+              <div className="absolute top-10 left-10 z-10">
                 <div className="flex flex-col items-center">
                   <p className="text-5xl font-light text-white">{formatDate(selectedJoinedEvent.date).day}</p>
                   <p className="text-white/60 text-sm font-light tracking-wider uppercase">{formatDate(selectedJoinedEvent.date).month}</p>
@@ -638,7 +822,9 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
                 <div className="space-y-1">
                   <p className="text-white/40 text-sm">Organizer</p>
-                  <p className="text-white font-medium">{selectedJoinedEvent.creator?.name || 'Unknown'}</p>
+                  <p className="text-white font-medium">
+  {`${selectedJoinedEvent.creator?.firstName || ''} ${selectedJoinedEvent.creator?.lastName || ''}`.trim() || 'Unknown'}
+</p>
                 </div>
                 {selectedJoinedEvent.location && (
                   <div className="space-y-1">
@@ -648,7 +834,7 @@ export default function ProfilePage() {
                 )}
                 <div className="space-y-1">
                   <p className="text-white/40 text-sm">Participants</p>
-                  <p className="text-white font-medium">{formatParticipants(selectedJoinedEvent.attendees)}</p>
+                  <p className="text-white font-medium">{formatParticipants(selectedJoinedEvent)}</p>
                 </div>
                 {!selectedJoinedEvent.isFree && selectedJoinedEvent.price && (
                   <div className="space-y-1">
@@ -662,6 +848,7 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Owned Event Modal con Carrusel */}
       {isOwnedModalOpen && selectedOwnedEvent && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
@@ -673,23 +860,78 @@ export default function ProfilePage() {
           >
             <button
               onClick={closeOwnedModal}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
               aria-label="Close modal"
             >
               <X className="w-6 h-6 text-white" />
             </button>
 
+            {/* Carrusel de imágenes para Owned Events */}
             <div className="relative h-64 overflow-hidden rounded-t-3xl">
-              <img
-                src={getEventImageUrl(selectedOwnedEvent)}
-                alt={selectedOwnedEvent.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/placeholder.svg"
-                }}
-              />
+              {selectedOwnedEvent.images && selectedOwnedEvent.images.length > 0 ? (
+                <>
+                  <img
+                    src={getEventImageUrl(selectedOwnedEvent, ownedEventImageIndex)}
+                    alt={`${selectedOwnedEvent.title} - Image ${ownedEventImageIndex + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={() => handleImageError(getEventImageUrl(selectedOwnedEvent, ownedEventImageIndex))}
+                  />
+                  
+                  {/* Controles del carrusel */}
+                  {selectedOwnedEvent.images.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          prevOwnedImage()
+                        }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5 text-white" />
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          nextOwnedImage()
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5 text-white" />
+                      </button>
+
+                      {/* Indicadores de posición */}
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                        {selectedOwnedEvent.images.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setOwnedEventImageIndex(index)
+                            }}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              index === ownedEventImageIndex 
+                                ? 'bg-white' 
+                                : 'bg-white/50 hover:bg-white/70'
+                            }`}
+                            aria-label={`Go to image ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                  <span className="text-white/60">No image available</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
-              <div className="absolute top-10 left-10">
+              
+              {/* Fecha en el modal */}
+              <div className="absolute top-10 left-10 z-10">
                 <div className="flex flex-col items-center">
                   <p className="text-5xl font-light text-white">{formatDate(selectedOwnedEvent.date).day}</p>
                   <p className="text-white/60 text-sm font-light tracking-wider uppercase">{formatDate(selectedOwnedEvent.date).month}</p>
@@ -716,7 +958,9 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
                 <div className="space-y-1">
                   <p className="text-white/40 text-sm">Organizer</p>
-                  <p className="text-white font-medium">{selectedOwnedEvent.creator?.name || 'Unknown'}</p>
+                  <p className="text-white font-medium">
+  {`${selectedOwnedEvent.creator?.firstName || ''} ${selectedOwnedEvent.creator?.lastName || ''}`.trim() || 'Unknown'}
+</p>
                 </div>
                 {selectedOwnedEvent.location && (
                   <div className="space-y-1">
@@ -726,7 +970,7 @@ export default function ProfilePage() {
                 )}
                 <div className="space-y-1">
                   <p className="text-white/40 text-sm">Participants</p>
-                  <p className="text-white font-medium">{formatParticipants(selectedOwnedEvent.attendees)}</p>
+                  <p className="text-white font-medium">{formatParticipants(selectedOwnedEvent)}</p>
                 </div>
                 {!selectedOwnedEvent.isFree && selectedOwnedEvent.price && (
                   <div className="space-y-1">

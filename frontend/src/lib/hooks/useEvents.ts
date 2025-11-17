@@ -1,3 +1,4 @@
+// src/lib/hooks/useEvents.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { eventsApi } from '../api/events'
 
@@ -12,7 +13,7 @@ export const useCreateEvent = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (eventData: any) => eventsApi.createEvent(eventData),
+    mutationFn: (eventData: FormData) => eventsApi.createEvent(eventData), // ✅ Especificar FormData
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] })
       queryClient.invalidateQueries({ queryKey: ['ownedEvents'] })

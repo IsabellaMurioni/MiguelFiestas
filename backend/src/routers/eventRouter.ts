@@ -69,41 +69,28 @@ eventRouter.post(
  */
 eventRouter.get("/", async (req, res) => {
   try {
-    console.log('Query parameters received:', req.query);
-    console.log('Headers:', req.headers);
-
     const filters: any = {};
 
     if (req.query.free !== undefined) {
-      console.log('Free filter:', req.query.free);
       filters.free = req.query.free === "true";
     }
     if (req.query.priceMin) {
-      console.log('Price min:', req.query.priceMin);
       filters.priceMin = Number(req.query.priceMin);
     }
     if (req.query.priceMax) {
-      console.log('Price max:', req.query.priceMax);
       filters.priceMax = Number(req.query.priceMax);
     }
     if (req.query.category) {
-      console.log('Category:', req.query.category);
       filters.category = String(req.query.category);
     }
     if (req.query.status) {
-      console.log('Status:', req.query.status);
       filters.status = String(req.query.status);
     }
 
-    console.log('Applied filters:', filters);
-
     const events = await eventService.listEvents(filters);
-    
-    console.log('Events found:', events.length);
     
     res.json(events);
   } catch (err: any) {
-    console.error('Error in /events:', err);
     res.status(400).json({ error: err.message });
   }
 });
